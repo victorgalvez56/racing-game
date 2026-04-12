@@ -38,6 +38,7 @@ export default class RemoteCar
         this.id                 = _options.id
         this.name               = _options.name
         this.carColor           = _options.carColor ?? 0
+        this.carType            = _options.carType  || 'default'
         this.getPhysicsWorld    = _options.getPhysicsWorld  // () => CANNON.World | null
 
         // Snapshot interpolation buffer
@@ -90,8 +91,9 @@ export default class RemoteCar
         const shadeMatch = meshName.match(/^shade([a-z]+)/i)
         const shadeName  = shadeMatch ? shadeMatch[1].toLowerCase() : 'white'
 
-        // The car body is shadeRed — swap to the player's colour matcap
-        if(shadeName === 'red')
+        // Car body: default car uses shadeRed, cybertruck uses shadeMetal
+        const isBody = (shadeName === 'red') || (shadeName === 'metal' && this.carType === 'cybertruck')
+        if(isBody)
         {
             return this._makeMatcap(BODY_MATCAP[this.carColor % BODY_MATCAP.length])
         }
@@ -248,6 +250,9 @@ export default class RemoteCar
             new CANNON.Box(new CANNON.Vec3(C.chassisHalfSize.x, C.chassisHalfSize.y, C.chassisHalfSize.z)),
             new CANNON.Vec3(C.chassisOffset.x, C.chassisOffset.y, C.chassisOffset.z)
         )
+        // Tag so Physics.js collision handler can identify this as a bumper car
+        this._physicsBody.isBumperCar = true
+        this._physicsBody.remoteCarId = this.id
         physWorld.addBody(this._physicsBody)
     }
 

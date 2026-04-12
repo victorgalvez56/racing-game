@@ -16,10 +16,12 @@ export default class RemoteCarManager
         this._pending = []         // players queued before resources are ready
         this._ready   = false      // true once resources are loaded
 
-        // Pre-cloned GLTF templates — created before the local Car.js can
-        // consume (move) the GLTF scene children via getConvertedMesh().
-        this._chassisTemplate = null
-        this._wheelTemplate   = null
+        // Pre-cloned GLTF templates per car type — built before local Car.js
+        // consumes the GLTF scene children via getConvertedMesh().
+        this._templates = {
+            default:    { chassis: null, wheel: null },
+            cybertruck: { chassis: null, wheel: null },
+        }
 
         // Mark ready once resources finish loading (may already be done)
         if(this.resources.items.carDefaultChassis)
@@ -36,7 +38,7 @@ export default class RemoteCarManager
                 // Flush any players that joined before models were loaded
                 for(const p of this._pending)
                 {
-                    this._createCar(p.id, p.name, p.carColor)
+                    this._createCar(p.id, p.name, p.carColor, p.carType)
                 }
                 this._pending = []
             })
@@ -97,18 +99,20 @@ export default class RemoteCarManager
             return group
         }
 
-        this._chassisTemplate = _cloneChildren(this.resources.items.carDefaultChassis)
-        this._wheelTemplate   = _cloneChildrenCentered(this.resources.items.carDefaultWheel)
-        console.log('[RemoteCarManager] templates built — chassis children:', this._chassisTemplate.children.length, '| wheel children:', this._wheelTemplate.children.length)
+        this._templates.default.chassis    = _cloneChildren(this.resources.items.carDefaultChassis)
+        this._templates.default.wheel      = _cloneChildrenCentered(this.resources.items.carDefaultWheel)
+        this._templates.cybertruck.chassis = _cloneChildren(this.resources.items.carCyberTruckChassis)
+        this._templates.cybertruck.wheel   = _cloneChildrenCentered(this.resources.items.carCyberTruckWheel)
+        console.log('[RemoteCarManager] templates built for default + cybertruck')
     }
 
     _setupNetworkEvents()
     {
         // New player joins — create their car
-        this.network.on('player:joined', ({ id, name, carColor }) =>
+        this.network.on('player:joined', ({ id, name, carColor, carType }) =>
         {
-            console.log(`[RemoteCarManager] player:joined → name="${name}" id="${id}"`)
-            this._addCar(id, name, carColor)
+            console.log(`[RemoteCarManager] player:joined → name="${name}" id="${id}" carType="${carType}"`)
+            this._addCar(id, name, carColor, carType)
         })
 
         // Player leaves — destroy their car
@@ -149,13 +153,13 @@ export default class RemoteCarManager
             console.log(`[RemoteCarManager] room:joined → existingPlayers:`, existingPlayers)
             for(const player of existingPlayers)
             {
-                this._addCar(player.id, player.name, player.carColor)
+                this._addCar(player.id, player.name, player.carColor, player.carType)
             }
         })
     }
 
     // Public: queue or immediately create
-    _addCar(id, name, carColor)
+    _addCar(id, name, carColor, carType = 'default')
     {
         if(this.cars.has(id)) return
         // Avoid duplicate pending entries
@@ -163,29 +167,32 @@ export default class RemoteCarManager
 
         if(this._ready)
         {
-            this._createCar(id, name, carColor)
+            this._createCar(id, name, carColor, carType)
         }
         else
         {
             // Resources not loaded yet — queue for later
-            this._pending.push({ id, name, carColor })
+            this._pending.push({ id, name, carColor, carType })
             console.log(`[remote] queued ${name} until resources ready`)
         }
     }
 
     // Internal: actually create the Three.js car
-    _createCar(id, name, carColor)
+    _createCar(id, name, carColor, carType = 'default')
     {
         if(this.cars.has(id)) return
+
+        const tmpl = this._templates[carType] || this._templates.default
 
         const car = new RemoteCar({
             scene:           this.scene,
             resources:       this.resources,
-            chassisTemplate: this._chassisTemplate,
-            wheelTemplate:   this._wheelTemplate,
+            chassisTemplate: tmpl.chassis,
+            wheelTemplate:   tmpl.wheel,
             id,
             name,
             carColor,
+            carType,
             getPhysicsWorld: this.getPhysicsWorld,
         })
 

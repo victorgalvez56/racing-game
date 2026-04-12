@@ -64,6 +64,11 @@ export default class Network extends EventEmitter
             this.trigger('world:snapshot', [snapshot])
         })
 
+        this.socket.on('player:bumped', (data) =>
+        {
+            this.trigger('player:bumped', [data])
+        })
+
         // Latency measurement
         this._pingInterval = setInterval(() =>
         {
@@ -75,9 +80,10 @@ export default class Network extends EventEmitter
         }, 2000)
     }
 
-    join(name, carColor)
+    join(name, carColor, carType = 'default')
     {
-        this.socket.emit('player:join', { name, carColor })
+        this.localPlayerName = name
+        this.socket.emit('player:join', { name, carColor, carType })
     }
 
     sendInput(actions)
@@ -90,6 +96,11 @@ export default class Network extends EventEmitter
     {
         // Send our own physics state so server can relay it to remote players
         this.socket.emit('player:snapshot', state)
+    }
+
+    sendBump(targetId, fromPos)
+    {
+        this.socket.emit('player:bump', { targetId, fromPos })
     }
 
     playerReady()

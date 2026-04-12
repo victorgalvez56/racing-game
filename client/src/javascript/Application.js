@@ -161,7 +161,7 @@ export default class Application
     {
         this.network = new Network()
         this.network.connect()
-        this.lobbyUI = new LobbyUI({ network: this.network })
+        this.lobbyUI = new LobbyUI({ network: this.network, config: this.config })
     }
 
     setWorld()

@@ -1,10 +1,8 @@
-varying vec2 vUv;
+varying vec2 vWorldPos;
 
 void main()
 {
-    vUv = uv;
-
-    vec3 newPosition = position;
-    newPosition.z = 1.0;
-    gl_Position = vec4(newPosition, 1.0);
+    vec4 worldPos = modelMatrix * vec4(position, 1.0);
+    vWorldPos = worldPos.xy;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
 }

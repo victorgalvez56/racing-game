@@ -26,7 +26,7 @@ export class GameRoom {
 
       socket.on('ping', (cb) => { if(typeof cb === 'function') cb() })
 
-      socket.on('player:join', ({ name, carColor }) => {
+      socket.on('player:join', ({ name, carColor, carType }) => {
         const spawnPos = this._getSpawnPosition()
         this.physics.addCar(socket.id, spawnPos)
 
@@ -34,6 +34,7 @@ export class GameRoom {
           id:       socket.id,
           name:     name || 'Anonymous',
           carColor: carColor ?? 0,
+          carType:  carType || 'default',
           actions:  { up: false, down: false, left: false, right: false, brake: false, boost: false },
           spawnXY:  { x: spawnPos.x, y: spawnPos.y },
         })
@@ -41,7 +42,7 @@ export class GameRoom {
         // Send existing players to new joiner
         const existingPlayers = [...this.players.values()]
           .filter(p => p.id !== socket.id)
-          .map(({ id, name, carColor }) => ({ id, name, carColor }))
+          .map(({ id, name, carColor, carType }) => ({ id, name, carColor, carType }))
 
         // Include spawn position so client can initialise the local car at the same spot
         socket.emit('room:joined', { id: socket.id, existingPlayers, spawnPos: { x: spawnPos.x, y: spawnPos.y } })
@@ -51,6 +52,7 @@ export class GameRoom {
           id: socket.id,
           name: name || 'Anonymous',
           carColor: carColor ?? 0,
+          carType:  carType || 'default',
         })
 
         console.log(`[join] ${name} (${socket.id}) — ${this.players.size} online`)
@@ -73,6 +75,14 @@ export class GameRoom {
       socket.on('player:input', (actions) => {
         const player = this.players.get(socket.id)
         if (player) player.actions = actions
+      })
+
+      socket.on('player:bump', ({ targetId, fromPos }) => {
+        // Relay bump to the target player so their car reacts too
+        const targetSocket = this.io.sockets.sockets.get(targetId)
+        if (targetSocket) {
+          targetSocket.emit('player:bumped', { fromId: socket.id, fromPos })
+        }
       })
 
       socket.on('player:snapshot', (state) => {

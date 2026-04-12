@@ -1,0 +1,15 @@
+{
+  "name": "folio-bruno-multiplayer",
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently --names \"client,server\" --prefix-colors \"cyan,yellow\" \"npm run dev --prefix client\" \"cd server && node src/index.js\"",
+    "build": "npm run build --prefix client",
+    "server": "npm run dev --prefix server",
+    "client": "npm run dev --prefix client"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "playwright": "^1.59.1"
+  }
+}

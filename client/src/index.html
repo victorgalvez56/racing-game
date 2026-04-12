@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Racing Game</title>
+    <meta name="description" content="Multiplayer 3D racing game built with Three.js, Cannon.js and Socket.IO." />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#000000">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@700&display=block" rel="stylesheet">
+</head>
+<body>
+
+    <canvas class="canvas js-canvas"></canvas>
+
+    <!-- HUD: online count -->
+    <div id="mp-hud" style="
+        position: fixed;
+        top: 16px;
+        right: 16px;
+        background: rgba(0,0,0,0.5);
+        color: rgba(255,255,255,0.7);
+        font-family: monospace;
+        font-size: 12px;
+        padding: 4px 10px;
+        border-radius: 4px;
+        display: none;
+        z-index: 500;
+    ">1 online</div>
+
+    <!-- Toast for join/leave events -->
+    <div id="mp-toast" style="
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0,0,0,0.75);
+        color: #fff;
+        font-family: monospace;
+        font-size: 12px;
+        padding: 6px 16px;
+        border-radius: 4px;
+        display: none;
+        z-index: 500;
+        pointer-events: none;
+    "></div>
+
+    <script type="module" src="./index.js"></script>
+</body>
+</html>

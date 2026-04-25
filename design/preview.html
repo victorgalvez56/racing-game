@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en" data-screen="title">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>REDLINE — Design Preview</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap"
+    rel="stylesheet"
+  />
+
+  <style>
+    /* ─────────────────────────────────────────────────────────────────
+       DESIGN TOKENS
+       ───────────────────────────────────────────────────────────────── */
+    :root {
+      /* Surfaces */
+      --bg-deep:        #08080F;
+      --bg-surface:     #13131F;
+      --bg-elevated:    #1C1C2E;
+      --border-subtle:  #26263A;
+
+      /* Accents */
+      --accent-redline: #FF2E4D;
+      --accent-cyan:    #00E5FF;
+      --accent-amber:   #FFB627;
+
+      /* Text */
+      --text-primary:   #F5F5FA;
+      --text-secondary: #9999B0;
+      --text-dim:       #5A5A75;
+
+      /* Typography */
+      --font-display:   "Space Grotesk", sans-serif;
+      --font-ui:        "Inter", sans-serif;
+      --font-mono:      "JetBrains Mono", monospace;
+
+      /* Type scale (1.25 modular) */
+      --text-xs:        12px;
+      --text-sm:        14px;
+      --text-base:      16px;
+      --text-lg:        20px;
+      --text-xl:        25px;
+      --text-2xl:       32px;
+      --text-3xl:       40px;
+      --text-4xl:       50px;
+      --text-display:   96px;
+
+      /* Spacing (8px grid) */
+      --space-1:  4px;
+      --space-2:  8px;
+      --space-3:  12px;
+      --space-4:  16px;
+      --space-6:  24px;
+      --space-8:  32px;
+      --space-12: 48px;
+      --space-16: 64px;
+      --space-24: 96px;
+
+      /* Radii */
+      --radius-sm:  4px;
+      --radius-md:  8px;
+      --radius-lg:  16px;
+
+      /* Motion */
+      --ease-out:    cubic-bezier(0.22, 1, 0.36, 1);
+      --ease-snap:   cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    /* ─────────────────────────────────────────────────────────────────
+       RESET & BASE
+       ───────────────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body { height: 100%; }
+
+    body {
+      font-family: var(--font-ui);
+      font-size: var(--text-base);
+      color: var(--text-primary);
+      background: var(--bg-deep);
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    button {
+      font: inherit;
+      color: inherit;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    :focus-visible {
+      outline: 2px solid var(--accent-cyan);
+      outline-offset: 2px;
+      border-radius: var(--radius-sm);
+    }
+
+    /* ─────────────────────────────────────────────────────────────────
+       BACKDROP — shared synthwave atmosphere
+       ───────────────────────────────────────────────────────────────── */
+    .backdrop {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Horizontal speed lines */
+    .backdrop::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        repeating-linear-gradient(
+          0deg,
+          transparent 0,
+          transparent 119px,
+          rgba(255, 46, 77, 0.03) 119px,
+          rgba(255, 46, 77, 0.03) 120px
+        );
+      mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
+    }
+
+    /* Soft radial glow */
+    .backdrop::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 50% 40%, rgba(255, 46, 77, 0.10), transparent 70%),
+        radial-gradient(ellipse 60% 40% at 80% 80%, rgba(0, 229, 255, 0.05), transparent 60%);
+    }
+
+    /* Grain overlay (subtle film grain) */
+    .grain {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 100;
+      opacity: 0.04;
+      mix-blend-mode: overlay;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+    }
+
+    /* ─────────────────────────────────────────────────────────────────
+       SCREEN VISIBILITY (state machine via [data-screen])
+       ───────────────────────────────────────────────────────────────── */
+    .screen {
+      position: fixed;
+      inset: 0;
+      display: none;
+      z-index: 10;
+      opacity: 0;
+      transition: opacity 0.4s var(--ease-out);
+    }
+
+    body[data-screen="title"]      .screen-title,
+    body[data-screen="menu"]       .screen-menu,
+    body[data-screen="onboarding"] .screen-menu,
+    body[data-screen="onboarding"] .screen-onboarding {
+      display: flex;
+      opacity: 1;
+    }
+
+    /* Onboarding overlays the menu, so menu stays at base z while onboarding rises */
+    .screen-onboarding { z-index: 20; }
+
+    /* ─────────────────────────────────────────────────────────────────
+       TITLE SCREEN
+       ───────────────────────────────────────────────────────────────── */
+    .screen-title {
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: var(--space-8);
+    }
+
+    .title-wordmark {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: var(--text-display);
+      letter-spacing: -0.04em;
+      line-height: 0.9;
+      color: var(--text-primary);
+      position: relative;
+      text-shadow:
+        0 0 40px rgba(255, 46, 77, 0.4),
+        0 0 80px rgba(255, 46, 77, 0.15);
+    }
+
+    .title-wordmark::before {
+      content: 'REDLINE';
+      position: absolute;
+      inset: 0;
+      color: var(--accent-redline);
+      transform: translate(2px, 2px);
+      opacity: 0.6;
+      filter: blur(4px);
+      z-index: -1;
+    }
+
+    /* Decorative red horizontal slash through wordmark */
+    .title-slash {
+      width: 280px;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent-redline), transparent);
+      margin-top: var(--space-4);
+      box-shadow: 0 0 20px rgba(255, 46, 77, 0.5);
+    }
+
+    .title-tagline {
+      font-family: var(--font-ui);
+      font-size: var(--text-lg);
+      font-weight: 500;
+      color: var(--text-secondary);
+      letter-spacing: 0.02em;
+      margin-top: var(--space-6);
+    }
+
+    .title-tagline em {
+      font-style: normal;
+      color: var(--accent-redline);
+    }
+
+    .title-prompt {
+      position: absolute;
+      bottom: var(--space-12);
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      font-weight: 500;
+      letter-spacing: 0.3em;
+      color: var(--text-dim);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    .title-prompt::before { content: '['; margin-right: var(--space-2); color: var(--accent-redline); }
+    .title-prompt::after  { content: ']'; margin-left:  var(--space-2); color: var(--accent-redline); }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.4; }
+      50%      { opacity: 1; }
+    }
+
+    /* Version badge top-right */
+    .version-badge {
+      position: absolute;
+      top: var(--space-6);
+      right: var(--space-6);
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      color: var(--text-dim);
+      letter-spacing: 0.15em;
+    }
+    .version-badge::before { content: 'v'; color: var(--accent-redline); }
+
+    /* ─────────────────────────────────────────────────────────────────
+       MAIN MENU
+       ───────────────────────────────────────────────────────────────── */
+    .screen-menu {
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: var(--space-12) var(--space-8);
+    }
+
+    .menu-header {
+      position: absolute;
+      top: var(--space-6);
+      left: var(--space-6);
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+
+    .menu-logo {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: var(--text-xl);
+      letter-spacing: -0.02em;
+    }
+    .menu-logo span { color: var(--accent-redline); }
+
+    .menu-divider {
+      width: 1px;
+      height: 16px;
+      background: var(--border-subtle);
+    }
+
+    .menu-version {
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      color: var(--text-dim);
+      letter-spacing: 0.15em;
+    }
+
+    .menu-hero {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: var(--text-3xl);
+      letter-spacing: -0.02em;
+      text-align: center;
+      margin-bottom: var(--space-12);
+    }
+
+    .menu-hero-eyebrow {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      font-weight: 500;
+      letter-spacing: 0.3em;
+      color: var(--accent-redline);
+      margin-bottom: var(--space-3);
+    }
+
+    /* Mode cards container */
+    .mode-cards {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(280px, 320px));
+      gap: var(--space-6);
+      width: 100%;
+      max-width: 1080px;
+    }
+
+    .mode-card {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-4);
+      padding: var(--space-8);
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      cursor: pointer;
+      transition:
+        transform 0.25s var(--ease-out),
+        border-color 0.25s var(--ease-out),
+        background 0.25s var(--ease-out);
+      overflow: hidden;
+      text-align: left;
+      width: 100%;
+    }
+
+    .mode-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, transparent 60%, var(--card-accent, transparent) 200%);
+      opacity: 0;
+      transition: opacity 0.25s var(--ease-out);
+      pointer-events: none;
+    }
+
+    .mode-card:hover,
+    .mode-card:focus-visible {
+      transform: translateY(-4px);
+      border-color: var(--card-accent);
+      background: var(--bg-elevated);
+      outline: none;
+      box-shadow: 0 12px 40px -16px var(--card-accent);
+    }
+
+    .mode-card:hover::before { opacity: 0.18; }
+
+    .mode-card[data-mode="race"]    { --card-accent: var(--accent-cyan); }
+    .mode-card[data-mode="combat"]  { --card-accent: var(--accent-redline); }
+    .mode-card[data-mode="arcade"]  { --card-accent: var(--accent-amber); }
+
+    .mode-card-icon {
+      font-size: var(--text-2xl);
+      width: 56px;
+      height: 56px;
+      display: grid;
+      place-items: center;
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: var(--radius-md);
+      color: var(--card-accent);
+      filter: drop-shadow(0 0 12px var(--card-accent));
+    }
+
+    .mode-card-label {
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      font-weight: 500;
+      letter-spacing: 0.25em;
+      color: var(--card-accent);
+      text-transform: uppercase;
+    }
+
+    .mode-card-name {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: var(--text-2xl);
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+    }
+
+    .mode-card-desc {
+      font-size: var(--text-sm);
+      color: var(--text-secondary);
+      line-height: 1.5;
+      flex: 1;
+    }
+
+    .mode-card-stats {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      color: var(--text-dim);
+      letter-spacing: 0.1em;
+      padding-top: var(--space-3);
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .mode-card-stats span { color: var(--text-secondary); }
+    .mode-card-stats em {
+      font-style: normal;
+      color: var(--card-accent);
+      margin: 0 var(--space-1);
+    }
+
+    .mode-card-cta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-family: var(--font-ui);
+      font-size: var(--text-sm);
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      color: var(--card-accent);
+      text-transform: uppercase;
+      transition: gap 0.25s var(--ease-out);
+    }
+
+    .mode-card-cta-arrow {
+      transition: transform 0.25s var(--ease-out);
+    }
+
+    .mode-card:hover .mode-card-cta-arrow {
+      transform: translateX(6px);
+    }
+
+    .menu-footer {
+      position: absolute;
+      bottom: var(--space-6);
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: var(--space-6);
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      color: var(--text-dim);
+      letter-spacing: 0.15em;
+    }
+
+    .menu-footer button:hover { color: var(--text-secondary); }
+    .menu-footer-divider { width: 1px; height: 12px; background: var(--border-subtle); }
+
+    /* ─────────────────────────────────────────────────────────────────
+       ONBOARDING OVERLAY
+       ───────────────────────────────────────────────────────────────── */
+    .screen-onboarding {
+      align-items: center;
+      justify-content: center;
+      background: rgba(8, 8, 15, 0.7);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    .onboarding-card {
+      position: relative;
+      width: min(560px, 92vw);
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: var(--space-8);
+      box-shadow: 0 24px 80px -20px rgba(0, 0, 0, 0.8);
+    }
+
+    .onboarding-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 60%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--mode-accent, var(--accent-redline)), transparent);
+    }
+
+    .onboarding-header {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      margin-bottom: var(--space-6);
+    }
+
+    .onboarding-icon {
+      width: 40px;
+      height: 40px;
+      display: grid;
+      place-items: center;
+      font-size: var(--text-xl);
+      color: var(--mode-accent);
+      filter: drop-shadow(0 0 12px var(--mode-accent));
+    }
+
+    .onboarding-title {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: var(--text-xl);
+      letter-spacing: -0.02em;
+    }
+
+    .onboarding-mode {
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      color: var(--mode-accent);
+      letter-spacing: 0.25em;
+    }
+
+    .onboarding-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--space-6);
+      margin-bottom: var(--space-8);
+    }
+
+    .onboarding-col-label {
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      font-weight: 500;
+      letter-spacing: 0.25em;
+      color: var(--text-dim);
+      margin-bottom: var(--space-3);
+    }
+
+    .onboarding-col-content {
+      font-size: var(--text-sm);
+      line-height: 1.6;
+      color: var(--text-secondary);
+    }
+
+    .onboarding-col-content kbd {
+      display: inline-block;
+      padding: 2px 6px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      color: var(--text-primary);
+      margin: 0 1px;
+    }
+
+    .onboarding-cta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: var(--space-4);
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .onboarding-skip {
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      letter-spacing: 0.15em;
+      color: var(--text-dim);
+    }
+
+    .onboarding-confirm {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-3) var(--space-6);
+      background: var(--mode-accent);
+      color: var(--bg-deep);
+      border-radius: var(--radius-md);
+      font-family: var(--font-ui);
+      font-weight: 600;
+      font-size: var(--text-sm);
+      letter-spacing: 0.05em;
+      transition: filter 0.2s var(--ease-out);
+    }
+
+    .onboarding-confirm:hover { filter: brightness(1.15); }
+
+    /* ─────────────────────────────────────────────────────────────────
+       PREVIEW NAVIGATOR (only in preview, removed in integration)
+       ───────────────────────────────────────────────────────────────── */
+    .preview-nav {
+      position: fixed;
+      bottom: var(--space-6);
+      right: var(--space-6);
+      z-index: 200;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+      padding: var(--space-3);
+      background: rgba(28, 28, 46, 0.8);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      letter-spacing: 0.1em;
+    }
+
+    .preview-nav-label {
+      color: var(--text-dim);
+      padding: var(--space-1) var(--space-2);
+    }
+
+    .preview-nav button {
+      padding: var(--space-2) var(--space-4);
+      text-align: left;
+      color: var(--text-secondary);
+      border-radius: var(--radius-sm);
+      transition: background 0.15s var(--ease-out), color 0.15s var(--ease-out);
+    }
+
+    .preview-nav button:hover { background: var(--bg-elevated); color: var(--text-primary); }
+    .preview-nav button.active {
+      color: var(--accent-redline);
+      background: rgba(255, 46, 77, 0.1);
+    }
+  </style>
+</head>
+<body>
+  <div class="backdrop" aria-hidden="true"></div>
+  <div class="grain" aria-hidden="true"></div>
+
+  <!-- ─────────────────────────────────────────────────────────
+       SCREEN 1 — TITLE
+       ───────────────────────────────────────────────────────── -->
+  <main class="screen screen-title" aria-labelledby="title-heading">
+    <div class="version-badge">0.1.0</div>
+
+    <h1 class="title-wordmark" id="title-heading" aria-label="REDLINE">REDLINE</h1>
+    <div class="title-slash" aria-hidden="true"></div>
+    <p class="title-tagline">Race clean. Or <em>wreck everything</em>.</p>
+
+    <div class="title-prompt" role="status">PRESS ANY KEY</div>
+  </main>
+
+  <!-- ─────────────────────────────────────────────────────────
+       SCREEN 2 — MAIN MENU
+       ───────────────────────────────────────────────────────── -->
+  <main class="screen screen-menu" aria-labelledby="menu-heading">
+    <div class="menu-header">
+      <div class="menu-logo">RED<span>LINE</span></div>
+      <div class="menu-divider" aria-hidden="true"></div>
+      <div class="menu-version">0.1.0</div>
+    </div>
+
+    <h2 class="menu-hero" id="menu-heading">
+      <span class="menu-hero-eyebrow">CHOOSE YOUR MODE</span>
+      Pick your lane.
+    </h2>
+
+    <div class="mode-cards" role="list">
+      <button class="mode-card" data-mode="race" type="button" role="listitem">
+        <div class="mode-card-icon" aria-hidden="true">🏁</div>
+        <div class="mode-card-label">Mode 01</div>
+        <div class="mode-card-name">RACE</div>
+        <div class="mode-card-desc">Five laps. No mercy on the clock. Pure speed, clean lines, sector splits.</div>
+        <div class="mode-card-stats">
+          <span>5</span><em>·</em><span>LAPS</span><em>·</em><span>NO WEAPONS</span>
+        </div>
+        <div class="mode-card-cta">
+          <span>Enter</span>
+          <span class="mode-card-cta-arrow" aria-hidden="true">→</span>
+        </div>
+      </button>
+
+      <button class="mode-card" data-mode="combat" type="button" role="listitem">
+        <div class="mode-card-icon" aria-hidden="true">💥</div>
+        <div class="mode-card-label">Mode 02</div>
+        <div class="mode-card-name">COMBAT</div>
+        <div class="mode-card-desc">Five kills. Last car running. Missiles, pickups, debris, mayhem.</div>
+        <div class="mode-card-stats">
+          <span>5</span><em>·</em><span>KILLS</span><em>·</em><span>FREE-FOR-ALL</span>
+        </div>
+        <div class="mode-card-cta">
+          <span>Enter</span>
+          <span class="mode-card-cta-arrow" aria-hidden="true">→</span>
+        </div>
+      </button>
+
+      <button class="mode-card" data-mode="arcade" type="button" role="listitem">
+        <div class="mode-card-icon" aria-hidden="true">🎮</div>
+        <div class="mode-card-label">Mode 03</div>
+        <div class="mode-card-name">ARCADE</div>
+        <div class="mode-card-desc">Both. At once. No rules — race the clock while dodging missiles.</div>
+        <div class="mode-card-stats">
+          <span>5</span><em>·</em><span>LAPS</span><em>·</em><span>WEAPONS HOT</span>
+        </div>
+        <div class="mode-card-cta">
+          <span>Enter</span>
+          <span class="mode-card-cta-arrow" aria-hidden="true">→</span>
+        </div>
+      </button>
+    </div>
+
+    <nav class="menu-footer" aria-label="Secondary actions">
+      <button type="button">CONTROLS</button>
+      <span class="menu-footer-divider" aria-hidden="true"></span>
+      <button type="button">CREDITS</button>
+      <span class="menu-footer-divider" aria-hidden="true"></span>
+      <span>© 2026</span>
+    </nav>
+  </main>
+
+  <!-- ─────────────────────────────────────────────────────────
+       SCREEN 3 — ONBOARDING OVERLAY (defaults to Combat mode preview)
+       ───────────────────────────────────────────────────────── -->
+  <div class="screen screen-onboarding" role="dialog" aria-modal="true" aria-labelledby="ob-heading" style="--mode-accent: var(--accent-redline);">
+    <div class="onboarding-card">
+      <div class="onboarding-header">
+        <div class="onboarding-icon" aria-hidden="true">💥</div>
+        <div>
+          <div class="onboarding-mode">MODE 02</div>
+          <h3 class="onboarding-title" id="ob-heading">COMBAT</h3>
+        </div>
+      </div>
+
+      <div class="onboarding-grid">
+        <div>
+          <div class="onboarding-col-label">OBJECTIVE</div>
+          <div class="onboarding-col-content">First driver to <em style="color: var(--mode-accent); font-style: normal;">5 kills</em> wins. Stay alive, hunt rivals.</div>
+        </div>
+
+        <div>
+          <div class="onboarding-col-label">CONTROLS</div>
+          <div class="onboarding-col-content">
+            <kbd>WASD</kbd> drive ·
+            <kbd>SHIFT</kbd> boost ·
+            <kbd>SPACE</kbd> brake ·
+            <kbd>F</kbd> fire ·
+            <kbd>R</kbd> respawn
+          </div>
+        </div>
+
+        <div>
+          <div class="onboarding-col-label">TIPS</div>
+          <div class="onboarding-col-content">Grab orange ammo crates and green health spheres. Missiles home toward enemies — don't waste them on walls.</div>
+        </div>
+      </div>
+
+      <div class="onboarding-cta">
+        <span class="onboarding-skip">SKIP — any key</span>
+        <button class="onboarding-confirm" type="button">
+          <span>GOT IT</span>
+          <span aria-hidden="true">→</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────────────────────────────────────────────────
+       PREVIEW NAVIGATOR
+       ───────────────────────────────────────────────────────── -->
+  <aside class="preview-nav" aria-label="Preview navigation">
+    <div class="preview-nav-label">PREVIEW</div>
+    <button type="button" data-goto="title" class="active">01 · TITLE</button>
+    <button type="button" data-goto="menu">02 · MENU</button>
+    <button type="button" data-goto="onboarding">03 · ONBOARDING</button>
+  </aside>
+
+  <script>
+    // Preview navigator
+    const navButtons = document.querySelectorAll('.preview-nav button[data-goto]');
+    navButtons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const target = btn.dataset.goto;
+        document.body.dataset.screen = target;
+        navButtons.forEach((b) => b.classList.toggle('active', b === btn));
+      });
+    });
+
+    // Title screen: any key advances to menu (preview only)
+    document.addEventListener('keydown', (e) => {
+      if (document.body.dataset.screen === 'title') {
+        document.body.dataset.screen = 'menu';
+        navButtons.forEach((b) => b.classList.toggle('active', b.dataset.goto === 'menu'));
+      } else if (document.body.dataset.screen === 'onboarding') {
+        document.body.dataset.screen = 'menu';
+        navButtons.forEach((b) => b.classList.toggle('active', b.dataset.goto === 'menu'));
+      }
+    });
+
+    // Mode card click → onboarding for that mode
+    document.querySelectorAll('.mode-card').forEach((card) => {
+      card.addEventListener('click', () => {
+        const mode = card.dataset.mode;
+        const overlay = document.querySelector('.screen-onboarding');
+        const accentMap = {
+          race:   'var(--accent-cyan)',
+          combat: 'var(--accent-redline)',
+          arcade: 'var(--accent-amber)',
+        };
+        const iconMap = { race: '🏁', combat: '💥', arcade: '🎮' };
+        const numMap  = { race: '01', combat: '02', arcade: '03' };
+        const nameMap = { race: 'RACE', combat: 'COMBAT', arcade: 'ARCADE' };
+
+        overlay.style.setProperty('--mode-accent', accentMap[mode]);
+        overlay.querySelector('.onboarding-icon').textContent  = iconMap[mode];
+        overlay.querySelector('.onboarding-mode').textContent  = `MODE ${numMap[mode]}`;
+        overlay.querySelector('.onboarding-title').textContent = nameMap[mode];
+
+        document.body.dataset.screen = 'onboarding';
+        navButtons.forEach((b) => b.classList.toggle('active', b.dataset.goto === 'onboarding'));
+      });
+    });
+  </script>
+</body>
+</html>

@@ -73,6 +73,11 @@ export default class World
     {
         window.setTimeout(() => { this.camera.pan.enable() }, 2000)
 
+        // Mode flags
+        const mode  = this.config.gameMode || 'arcade'
+        const race  = mode === 'race'   || mode === 'arcade'
+        const combat = mode === 'combat' || mode === 'arcade'
+
         this.setReveal()
         this.setMaterials()
         this.setShadows()
@@ -85,20 +90,30 @@ export default class World
         this.areas.car = this.car
         this._setupYouLabel()
         this.setMinimap()
-        this.setLapTimer()
-        this.setSectorMarkers()
-        this.setHUD()
+
+        if(race)
+        {
+            this.setLapTimer()
+            this.setSectorMarkers()
+            this.setHUD()
+            this._setupOffTrackDetection()
+            this._setupWrongWayDetection()
+            this._setupRaceEnd()
+        }
+
         this.setSkidMarks()
         this.setSmokeParticles()
         this.setBoostPads()
         this.setEnvironment()
-        this._setupOffTrackDetection()
-        this._setupWrongWayDetection()
         this._setupRespawnFeedback()
         this._setupMuteButton()
         this._setupCameraEffects()
-        this._setupRaceEnd()
-        this.setCombat()
+
+        if(combat)
+        {
+            this.setCombat()
+            this._setupCombatEnd()
+        }
     }
 
     setReveal()
@@ -640,13 +655,44 @@ export default class World
             remoteCarManager: this.remoteCarManager || null,
             onHitCar: (id, dmg) =>
             {
-                if(this.network) this.network.sendCombatDamage?.(id, dmg)
+                if(this.network) this.network.sendCombatDamage(id, dmg)
+                // Track damage so _setupCombatEnd can attribute kills
+                if(!this._recentDamage) this._recentDamage = new Map()
+                this._recentDamage.set(id, Date.now())
             },
             onFire: () =>
             {
                 this.sounds?.play('carHit', 12)
             },
+            onFired: (x, y, z, dx, dy) =>
+            {
+                if(this.network) this.network.sendMissileFired(x, y, z, dx, dy)
+            },
+            onExploded: (x, y, z) =>
+            {
+                if(this.network) this.network.sendExplosion(x, y, z)
+            },
         })
+
+        // ── Receive remote missiles and explosions ──
+        if(this.network)
+        {
+            this.network.on('combat:missile', ({ x, y, z, dx, dy }) =>
+            {
+                console.log('[world] remote missile spawn at', x, y, z)
+                this.weapons.spawnRemoteMissile(x, y, z, dx, dy)
+            })
+
+            this.network.on('combat:explosion', ({ x, y, z }) =>
+            {
+                this.weapons._explodeAt(x, y, z)
+            })
+
+            this.network.on('combat:carDestroyed', ({ fromId, x, y, z, vx, vy, color }) =>
+            {
+                this._destroyRemoteCar(fromId, x, y, z, vx, vy, color)
+            })
+        }
 
         // ── Health system ──
         this.healthSystem = new HealthSystem({
@@ -698,6 +744,8 @@ export default class World
         this.healthSystem.on('death', () =>
         {
             this._updateCombatHUD()
+            this._destroyLocalCar()
+
             const $ov = document.getElementById('death-overlay')
             if($ov) $ov.classList.add('visible')
             let t = 3
@@ -713,6 +761,7 @@ export default class World
         this.healthSystem.on('respawn', () =>
         {
             this._updateCombatHUD()
+            this._showLocalCar()
             const $ov = document.getElementById('death-overlay')
             if($ov) $ov.classList.remove('visible')
         })
@@ -783,6 +832,54 @@ export default class World
         {
             if($note) $note.style.opacity = '0'
         }, 2000)
+    }
+
+    _destroyLocalCar()
+    {
+        const body = this.physics?.car?.chassis?.body
+        if(!body) return
+        const px = body.position.x, py = body.position.y, pz = body.position.z
+        const vx = body.velocity.x, vy = body.velocity.y
+
+        const bodyColor = [
+            0xff3333, 0x3366ff, 0x33cc66, 0xff8833,
+            0xaa44ff, 0x33cccc, 0xff66aa, 0xeeeeee,
+        ][this.config.carColor ?? 0] || 0xff3333
+
+        // Massive local explosion
+        this.weapons.explodeCar(px, py, pz, vx, vy, bodyColor)
+        this.sounds?.play('carHit', 18)
+        this._shakeCamera()
+        setTimeout(() => this._shakeCamera(), 80)
+        setTimeout(() => this._shakeCamera(), 180)
+
+        // Hide local car meshes
+        if(this.car?.chassis?.object) this.car.chassis.object.visible = false
+        this.car?.wheels?.items?.forEach(w => { w.visible = false })
+
+        // Sync to other players
+        if(this.network) this.network.sendCarDestroyed(px, py, pz, vx, vy, bodyColor)
+    }
+
+    _showLocalCar()
+    {
+        if(this.car?.chassis?.object) this.car.chassis.object.visible = true
+        this.car?.wheels?.items?.forEach(w => { w.visible = true })
+    }
+
+    _destroyRemoteCar(id, x, y, z, vx, vy, color)
+    {
+        // Big explosion at remote position
+        this.weapons.explodeCar(x, y, z, vx, vy, color)
+        this._shakeCamera()  // distant shake
+
+        // Hide that remote car for 3s (matches RESPAWN_MS)
+        const car = this.remoteCarManager?.cars?.get(id)
+        if(car)
+        {
+            car.setVisible?.(false)
+            setTimeout(() => car.setVisible?.(true), 3000)
+        }
     }
 
     _setupRaceEnd()
@@ -1037,5 +1134,73 @@ export default class World
                 }, 560)
             }, 600)
         }, allRedAt + 400)
+    }
+
+    // ── Combat: kill counter + win condition (first to 5) ───────────────────
+
+    _setupCombatEnd()
+    {
+        const TARGET_KILLS = 5
+        this._kills = 0
+        this._combatOver = false
+
+        const $kc = document.getElementById('kill-counter')
+        if($kc) $kc.classList.add('visible')
+        this._updateKillCounter(0, TARGET_KILLS)
+
+        // Heuristic: if a car was destroyed within 1500ms of us hitting it,
+        // attribute the kill to us. Server-side tracking would be more accurate
+        // but this is a solid signal for the common case.
+        if(this.network)
+        {
+            this.network.on('combat:carDestroyed', ({ fromId }) =>
+            {
+                if(this._combatOver) return
+                if(!this._recentDamage) return
+                const stamp = this._recentDamage.get(fromId)
+                if(!stamp) return
+                if(Date.now() - stamp > 1500) return
+
+                this._recentDamage.delete(fromId)
+                this._kills++
+                this._updateKillCounter(this._kills, TARGET_KILLS)
+                this._showCombatPickup?.(`+1 KILL`, '#FF2E4D')
+
+                if(this._kills >= TARGET_KILLS)
+                {
+                    this._combatOver = true
+                    setTimeout(() => this._showCombatComplete(this._kills), 1000)
+                }
+            })
+        }
+    }
+
+    _updateKillCounter(kills, target)
+    {
+        const $val = document.getElementById('kc-value')
+        if($val) $val.textContent = kills
+    }
+
+    _showCombatComplete(kills)
+    {
+        const $overlay = document.getElementById('race-complete')
+        if(!$overlay) return
+
+        const $trophy = $overlay.querySelector('.rc-trophy')
+        const $title  = $overlay.querySelector('.rc-title')
+        const $sub    = document.getElementById('rc-sub')
+        const $list   = document.getElementById('rc-laps')
+        const $footer = document.getElementById('rc-footer')
+
+        if($trophy) $trophy.textContent = '🏆'
+        if($title)  $title.textContent  = 'VICTORY'
+        if($sub)    $sub.textContent    = `${kills} kills · last car running`
+        if($list)   $list.innerHTML     = ''
+        if($footer) $footer.textContent = 'Free-for-all complete'
+
+        const $again = document.getElementById('rc-again')
+        if($again) $again.onclick = () => window.location.reload()
+
+        $overlay.classList.add('visible')
     }
 }

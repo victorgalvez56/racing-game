@@ -9,6 +9,7 @@ import Camera from './Camera.js'
 import Network from './Network.js'
 import LobbyUI from './LobbyUI.js'
 import Chat from './Chat.js'
+import EntryFlow from './EntryFlow.js'
 
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js'
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js'
@@ -41,7 +42,7 @@ export default class Application
         })
 
         this._setupLoadingScreen()
-        this._setupModeScreen()
+        this._setupEntryFlow()
     }
 
     setConfig()
@@ -51,6 +52,7 @@ export default class Application
         this.config.cyberTruck = window.location.hash === '#cybertruck'
         this.config.touch      = false
         this.config.soloMode   = false
+        this.config.gameMode   = 'arcade'   // 'race' | 'combat' | 'arcade'
 
         window.addEventListener('touchstart', () =>
         {
@@ -158,20 +160,18 @@ export default class Application
         })
     }
 
-    _setupModeScreen()
+    _setupEntryFlow()
     {
-        const $screen = document.getElementById('mode-screen')
-        if(!$screen) return
-
-        const pick = (mode) =>
+        // Wait for the loading screen to finish before showing the title.
+        // EntryFlow drives Title → Menu → Onboarding and finally calls onComplete
+        // with config.gameMode and config.soloMode set.
+        this.resources.on('ready', () =>
         {
-            $screen.classList.add('hidden')
-            this.config.soloMode = (mode === 'solo')
-            this._initGame()
-        }
-
-        document.getElementById('btn-solo-mode') ?.addEventListener('click', () => pick('solo'))
-        document.getElementById('btn-multi-mode')?.addEventListener('click', () => pick('multi'))
+            this._entryFlow = new EntryFlow({
+                config:     this.config,
+                onComplete: () => this._initGame(),
+            })
+        })
     }
 
     _initGame()
@@ -212,12 +212,12 @@ export default class Application
         if(!$screen) return
 
         const tips = [
-            '💡 WASD or arrow keys to drive',
-            '💡 Hold Shift to boost',
-            '🛑 Space or Ctrl to brake',
-            '🔄 Press R if you get stuck',
-            '💬 Press Enter to open chat',
-            '🏎 Beat your best lap time',
+            'WASD to drive · SHIFT to boost',
+            'F to fire · Space to brake',
+            'Press R if you get stuck',
+            'Race clean. Or wreck everything.',
+            'Missiles home. Don\'t waste them on walls.',
+            'Three modes. One track. Pick your lane.',
         ]
         let tipIdx = 0
         $tip.textContent = tips[0]

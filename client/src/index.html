@@ -2,14 +2,15 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Racing Game</title>
-    <meta name="description" content="Multiplayer 3D racing game built with Three.js, Cannon.js and Socket.IO." />
+    <title>REDLINE — Race clean. Or wreck everything.</title>
+    <meta name="description" content="REDLINE — multiplayer 3D arcade racer with vehicular combat. Built with Three.js, Cannon.js and Socket.IO." />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#000000">
+    <meta name="theme-color" content="#FF2E4D">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@700&display=block" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./styles/redline.css">
 
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -750,30 +751,122 @@
 
     <canvas class="canvas js-canvas"></canvas>
 
-    <!-- ── Mode selection (shown first, above lobby) ── -->
-    <div id="mode-screen">
-        <div class="lobby-card" style="max-width:460px;">
-            <div class="lobby-title">🏎 Racing Game</div>
-            <div class="lobby-step-label" style="margin-bottom:32px;">Select mode</div>
-            <div class="mode-grid">
-                <button class="mode-btn" id="btn-solo-mode">
-                    <div class="mode-icon">🏁</div>
-                    <div class="mode-name">Solo</div>
-                    <div class="mode-desc">Time trial · beat your best lap</div>
+    <!-- ── REDLINE: Title screen ── -->
+    <div id="redline-title" class="rl-overlay">
+        <div class="rl-version">0.1.0</div>
+        <div class="rl-title-content">
+            <h1 class="rl-wordmark">REDLINE</h1>
+            <div class="rl-slash" aria-hidden="true"></div>
+            <p class="rl-tagline">Race clean. Or <em>wreck everything</em>.</p>
+        </div>
+        <div class="rl-prompt">PRESS ANY KEY</div>
+    </div>
+
+    <!-- ── REDLINE: Main menu ── -->
+    <div id="redline-menu" class="rl-overlay">
+        <header class="rl-menu-header">
+            <div class="rl-logo">RED<span>LINE</span></div>
+            <span class="rl-divider" aria-hidden="true"></span>
+            <div class="rl-version" style="position:static;">0.1.0</div>
+        </header>
+
+        <div class="rl-menu-content">
+            <h2 class="rl-hero">
+                <span class="rl-eyebrow">CHOOSE YOUR MODE</span>
+                Pick your lane.
+            </h2>
+
+            <div class="rl-cards" role="list">
+                <button class="rl-card" data-mode="race" type="button" role="listitem">
+                    <div class="rl-card-icon" aria-hidden="true">🏁</div>
+                    <div class="rl-card-label">Mode 01</div>
+                    <div class="rl-card-name">RACE</div>
+                    <div class="rl-card-desc">Five laps. No mercy on the clock. Pure speed, clean lines, sector splits.</div>
+                    <div class="rl-card-stats"><span>5</span><em>·</em><span>LAPS</span><em>·</em><span>NO WEAPONS</span></div>
+                    <div class="rl-card-cta">
+                        <span>Enter</span>
+                        <span class="rl-card-cta-arrow" aria-hidden="true">→</span>
+                    </div>
                 </button>
-                <button class="mode-btn" id="btn-multi-mode">
-                    <div class="mode-icon">👥</div>
-                    <div class="mode-name">Multiplayer</div>
-                    <div class="mode-desc">Race against others online</div>
+
+                <button class="rl-card" data-mode="combat" type="button" role="listitem">
+                    <div class="rl-card-icon" aria-hidden="true">💥</div>
+                    <div class="rl-card-label">Mode 02</div>
+                    <div class="rl-card-name">COMBAT</div>
+                    <div class="rl-card-desc">Five kills. Last car running. Missiles, pickups, debris, mayhem.</div>
+                    <div class="rl-card-stats"><span>5</span><em>·</em><span>KILLS</span><em>·</em><span>FREE-FOR-ALL</span></div>
+                    <div class="rl-card-cta">
+                        <span>Enter</span>
+                        <span class="rl-card-cta-arrow" aria-hidden="true">→</span>
+                    </div>
+                </button>
+
+                <button class="rl-card" data-mode="arcade" type="button" role="listitem">
+                    <div class="rl-card-icon" aria-hidden="true">🎮</div>
+                    <div class="rl-card-label">Mode 03</div>
+                    <div class="rl-card-name">ARCADE</div>
+                    <div class="rl-card-desc">Both. At once. No rules — race the clock while dodging missiles.</div>
+                    <div class="rl-card-stats"><span>5</span><em>·</em><span>LAPS</span><em>·</em><span>WEAPONS HOT</span></div>
+                    <div class="rl-card-cta">
+                        <span>Enter</span>
+                        <span class="rl-card-cta-arrow" aria-hidden="true">→</span>
+                    </div>
+                </button>
+            </div>
+        </div>
+
+        <nav class="rl-menu-footer" aria-label="Secondary actions">
+            <span>© 2026 REDLINE</span>
+        </nav>
+    </div>
+
+    <!-- ── REDLINE: Onboarding overlay ── -->
+    <div id="redline-onboarding" class="rl-overlay" role="dialog" aria-modal="true" aria-labelledby="ob-title">
+        <div class="rl-ob-card">
+            <button class="rl-ob-back" type="button" aria-label="Back to menu">×</button>
+            <div class="rl-ob-header">
+                <div class="rl-ob-icon" aria-hidden="true">💥</div>
+                <div>
+                    <div class="rl-ob-mode">MODE 02</div>
+                    <h3 class="rl-ob-title" id="ob-title">COMBAT</h3>
+                </div>
+            </div>
+
+            <div class="rl-ob-grid">
+                <div>
+                    <div class="rl-ob-label">OBJECTIVE</div>
+                    <div class="rl-ob-text" id="ob-objective"></div>
+                </div>
+                <div>
+                    <div class="rl-ob-label">CONTROLS</div>
+                    <div class="rl-ob-text" id="ob-controls"></div>
+                </div>
+                <div>
+                    <div class="rl-ob-label">TIPS</div>
+                    <div class="rl-ob-text" id="ob-tips"></div>
+                </div>
+            </div>
+
+            <div class="rl-ob-cta">
+                <button class="rl-ob-btn rl-ob-btn-solo" type="button">
+                    <span>Play Solo</span>
+                </button>
+                <button class="rl-ob-btn rl-ob-btn-online" type="button">
+                    <span>Play Online</span>
+                    <span aria-hidden="true">→</span>
                 </button>
             </div>
         </div>
     </div>
 
+    <!-- ── Film grain overlay (above all REDLINE screens) ── -->
+    <div id="redline-grain" class="rl-grain hidden" aria-hidden="true"></div>
+
     <!-- ── Loading screen ── -->
     <div id="loading-screen">
         <div id="loading-content">
-            <div id="loading-title">🏎 Racing Game</div>
+            <div id="loading-title">RED<span>LINE</span></div>
+            <div id="loading-subtitle">LOADING ASSETS</div>
             <div id="loading-bar-track">
                 <div id="loading-bar-fill"></div>
             </div>
@@ -784,7 +877,7 @@
     <!-- ── Lobby overlay ── -->
     <div id="lobby">
         <div class="lobby-card">
-            <div class="lobby-title">🏎 Racing Game</div>
+            <div class="lobby-title">DRIVER PROFILE</div>
 
             <div class="lobby-step-label" id="lobby-step-label">Step 1 of 3</div>
 
@@ -1081,6 +1174,13 @@
             <div class="sl-pod" id="sl-3"></div>
             <div class="sl-pod" id="sl-4"></div>
         </div>
+    </div>
+
+    <!-- Kill counter (combat mode only) -->
+    <div id="kill-counter">
+        <span class="kc-label">KILLS</span>
+        <span class="kc-val" id="kc-value">0</span>
+        <span class="kc-target">/ 5</span>
     </div>
 
     <!-- Toast for join/leave events -->

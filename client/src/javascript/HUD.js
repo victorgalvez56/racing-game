@@ -20,6 +20,7 @@ export default class HUD
         this.$note  = document.getElementById('hud-lap-note')
         this.$lb    = document.getElementById('leaderboard')
         this.$lbList= document.getElementById('lb-list')
+        this.$gear  = document.getElementById('hud-gear')
 
         this._noteTimer = null
         this._lbTimer   = null
@@ -42,6 +43,7 @@ export default class HUD
     {
         if(this.$hud)   this.$hud.style.display   = 'flex'
         if(this.$speed) this.$speed.style.display = 'block'
+        if(this.$gear)  this.$gear.style.display  = 'block'
     }
 
     update()
@@ -81,6 +83,17 @@ export default class HUD
             const vel = this.physics.car.chassis.body.velocity
             const kmh = Math.sqrt(vel.x ** 2 + vel.y ** 2 + vel.z ** 2) * 3.6
             this.$speed.textContent = `${Math.round(kmh)}`
+
+            if(this.$gear)
+            {
+                const thresholds = [0, 22, 46, 76, 112, 150]
+                let gear = 1
+                for(let g = thresholds.length - 1; g >= 0; g--)
+                {
+                    if(kmh >= thresholds[g]) { gear = g + 1; break }
+                }
+                this.$gear.textContent = `G${gear}`
+            }
         }
     }
 

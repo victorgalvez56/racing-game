@@ -412,6 +412,43 @@
             to   { opacity: 0; }
         }
 
+        /* Mute button */
+        #btn-mute {
+            display: none;
+            position: fixed;
+            bottom: 24px;
+            left: 210px;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.15);
+            background: rgba(0,0,0,0.55);
+            color: #fff;
+            font-size: 16px;
+            cursor: pointer;
+            z-index: 600;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(6px);
+            transition: background 0.2s;
+        }
+        #btn-mute:hover { background: rgba(255,255,255,0.12); }
+
+        /* Gear indicator */
+        #hud-gear {
+            display: none;
+            position: fixed;
+            bottom: 60px;
+            right: 24px;
+            font-family: monospace;
+            font-size: 13px;
+            font-weight: bold;
+            color: rgba(255,255,255,0.35);
+            z-index: 500;
+            pointer-events: none;
+            letter-spacing: 2px;
+        }
+
         /* Respawn flash */
         #respawn-flash {
             position: fixed;
@@ -705,11 +742,17 @@
         <div id="hud-delta"></div>
     </div>
 
+    <!-- Gear indicator -->
+    <div id="hud-gear">G1</div>
+
     <!-- Speed indicator -->
     <div id="hud-speed">0</div>
 
     <!-- Lap completion note -->
     <div id="hud-lap-note"></div>
+
+    <!-- Mute toggle -->
+    <button id="btn-mute">🔊</button>
 
     <!-- Wrong-way indicator -->
     <div id="wrong-way">WRONG WAY ↺</div>

@@ -93,6 +93,7 @@ export default class World
         this._setupOffTrackDetection()
         this._setupWrongWayDetection()
         this._setupRespawnFeedback()
+        this._setupMuteButton()
         this._setupCameraEffects()
     }
 
@@ -323,6 +324,11 @@ export default class World
             this.lapTimer.addSector({ x: center[i2].x, y: center[i2].y }, { x: dx2 / l2, y: dy2 / l2 })
         }
 
+        this.lapTimer.on('sector', () =>
+        {
+            this.sounds?.play('uiArea', 0)
+        })
+
         this.time.on('tick', () =>
         {
             if(this.physics && this.lapTimer._active)
@@ -358,8 +364,9 @@ export default class World
             remoteCarManager: this.remoteCarManager || null,
             network:          this.network,
             localCarColor:    this.config.carColor ?? 0,
-            trackOuter:       this.track?.outerPath || null,
-            trackInner:       this.track?.innerPath || null,
+            trackOuter:       this.track?.outerPath  || null,
+            trackInner:       this.track?.innerPath  || null,
+            centerPath:       this.track?.centerPath || null,
         })
 
         this.time.on('tick', () => { this.minimap.update() })
@@ -693,6 +700,19 @@ export default class World
             }
 
             $el.style.display = score > 900 ? 'block' : 'none'
+        })
+    }
+
+    _setupMuteButton()
+    {
+        const $btn = document.getElementById('btn-mute')
+        if(!$btn) return
+        $btn.style.display = 'flex'
+        $btn.textContent   = this.sounds.isMuted() ? '🔇' : '🔊'
+        $btn.addEventListener('click', () =>
+        {
+            this.sounds.toggleMute()
+            $btn.textContent = this.sounds.isMuted() ? '🔇' : '🔊'
         })
     }
 

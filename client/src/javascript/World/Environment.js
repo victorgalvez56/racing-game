@@ -29,6 +29,7 @@ export default class Environment
         this._buildGantry()
         this._buildTrees()
         this._buildStands()
+        this._buildGravelTraps()
 
         // Atmospheric dark-blue background instead of pure black
         this.renderer.setClearColor(0x080c12, 1)
@@ -224,6 +225,31 @@ export default class Environment
         {
             this._vcone(r, h, 7, matGreen, x, y, base)
         })
+    }
+
+    // ── Gravel traps (visual only — drag is handled by World off-track detection) ──
+
+    _buildGravelTraps()
+    {
+        const mat = new THREE.MeshBasicMaterial({
+            color:      0x6e5c3a,
+            transparent: true,
+            opacity:    0.72,
+            depthWrite: false,
+            side:       THREE.DoubleSide,
+        })
+
+        // Outside the right lower hairpin (track curves from +X to +Y around x≈58,y≈-22)
+        this._place(new THREE.PlaneGeometry(22, 16), mat,  70, -16, 0.02, 0, 0, 0.3)
+
+        // Outside the right upper section (track curves NW around x≈58,y≈5)
+        this._place(new THREE.PlaneGeometry(16, 14), mat,  68,  30, 0.02, 0, 0, 0.7)
+
+        // Outside the left side (track turns S around x≈-42,y≈-5)
+        this._place(new THREE.PlaneGeometry(14, 22), mat, -54,   5, 0.02)
+
+        // Outside the upper-left hairpin (track curves SE around x≈-38,y≈-25)
+        this._place(new THREE.PlaneGeometry(16, 14), mat, -50, -30, 0.02, 0, 0, -0.4)
     }
 
     // ── Grandstands ──────────────────────────────────────────────────────────

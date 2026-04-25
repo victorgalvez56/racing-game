@@ -25,9 +25,10 @@ export default class Minimap
         this.remoteCarManager  = _options.remoteCarManager  // .cars Map
         this.network           = _options.network           // .localPlayerName, null if solo
         this.localCarColor     = _options.localCarColor ?? 0
-        this.trackOuter        = _options.trackOuter  || null  // [{x,y}]
-        this.trackInner        = _options.trackInner  || null  // [{x,y}]
-        this.boostPads         = _options.boostPads   || []   // [{x,y}]
+        this.trackOuter        = _options.trackOuter   || null  // [{x,y}]
+        this.trackInner        = _options.trackInner   || null  // [{x,y}]
+        this.boostPads         = _options.boostPads    || []   // [{x,y}]
+        this.centerPath        = _options.centerPath   || null  // [{x,y}] for progress arc
 
         this._buildCanvas()
     }
@@ -120,6 +121,22 @@ export default class Minimap
         const cx = body.position.x
         const cy = body.position.y
 
+        // ── Lap progress (closest centerline point / total) ─────────────────
+        let lapProgress = 0
+        if(this.centerPath && this.centerPath.length > 0)
+        {
+            const C = this.centerPath
+            let minSq = Infinity, minIdx = 0
+            for(let i = 0; i < C.length; i++)
+            {
+                const dx = C[i].x - cx
+                const dy = C[i].y - cy
+                const sq = dx * dx + dy * dy
+                if(sq < minSq) { minSq = sq; minIdx = i }
+            }
+            lapProgress = minIdx / C.length
+        }
+
         // ── background ──────────────────────────────────────────────────────
         ctx.clearRect(0, 0, MAP_PX, MAP_PX)
 
@@ -202,6 +219,22 @@ export default class Minimap
         ctx.strokeStyle = 'rgba(255,255,255,0.18)'
         ctx.lineWidth   = 1.5
         ctx.stroke()
+
+        // ── lap progress arc ────────────────────────────────────────────────
+        if(lapProgress > 0)
+        {
+            const rimR  = MAP_PX / 2 - 2
+            const start = -Math.PI / 2
+            const end   = start + lapProgress * Math.PI * 2
+            ctx.beginPath()
+            ctx.arc(MAP_PX / 2, MAP_PX / 2, rimR, start, end)
+            ctx.strokeStyle = '#00e5ff'
+            ctx.lineWidth   = 3
+            ctx.shadowColor  = '#00e5ff'
+            ctx.shadowBlur   = 4
+            ctx.stroke()
+            ctx.shadowBlur = 0
+        }
     }
 
     destroy()

@@ -177,10 +177,21 @@ export default class Sounds
         }
     }
 
+    toggleMute()
+    {
+        this.muted = !this.muted
+        Howler.mute(this.muted)
+        localStorage.setItem('rg:muted', this.muted ? '1' : '0')
+    }
+
+    isMuted() { return this.muted }
+
     setMute()
     {
-        // Set up
+        // Set up — debug mode starts muted; otherwise restore saved preference
         this.muted = typeof this.debug !== 'undefined'
+        const saved = localStorage.getItem('rg:muted')
+        if(saved !== null) this.muted = saved === '1'
         Howler.mute(this.muted)
 
         // M Key
@@ -188,8 +199,7 @@ export default class Sounds
         {
             if(_event.key === 'm')
             {
-                this.muted = !this.muted
-                Howler.mute(this.muted)
+                this.toggleMute()
             }
         })
 

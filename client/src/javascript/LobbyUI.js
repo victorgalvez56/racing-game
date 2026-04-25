@@ -1,15 +1,12 @@
 import { CAR_COLORS } from '../../../shared/constants.js'
 
-/**
- * LobbyUI
- * Multi-step pre-game configuration: name → color → car type → join.
- */
 export default class LobbyUI
 {
     constructor(_options)
     {
-        this.network = _options.network
-        this.config  = _options.config   // shared Application config — we set cyberTruck on it
+        this.network     = _options.network   // null in solo mode
+        this.config      = _options.config
+        this._onSoloJoin = _options.onSoloJoin || null
 
         this.$lobby = document.getElementById('lobby')
         this.$hud   = document.getElementById('mp-hud')
@@ -19,15 +16,16 @@ export default class LobbyUI
         this._onlineCount = 1
 
         // Load saved config from localStorage, fall back to defaults
-        const saved        = this._loadSaved()
-        this._name         = saved.name     || ''
-        this._colorIdx     = saved.colorIdx ?? 0
-        this._carType      = saved.carType  || 'default'
-        this._step         = 0
+        const saved    = this._loadSaved()
+        this._name     = saved.name     || ''
+        this._colorIdx = saved.colorIdx ?? 0
+        this._carType  = saved.carType  || 'default'
+        this._step     = 0
 
         this._buildColorGrid()
         this._bindLobbyEvents()
         this._restoreSavedUI()
+        this._setupQuickPlay()
         this._setupNetworkEvents()
     }
 
@@ -91,11 +89,42 @@ export default class LobbyUI
         })
     }
 
+    // ─── Quick-play ──────────────────────────────────────────────────────────
+
+    _setupQuickPlay()
+    {
+        if(!this._name) return
+
+        const $qp   = document.getElementById('quick-play')
+        const $name = document.getElementById('quick-play-name')
+        const $btn  = document.getElementById('btn-quick-play')
+        const $chg  = document.getElementById('btn-change-settings')
+
+        if(!$qp || !$btn) return
+
+        $name.textContent = this._name
+        $qp.style.display = 'block'
+
+        // Hide the normal name-input + next button when quick-play is shown
+        document.getElementById('lobby-name').style.display    = 'none'
+        document.getElementById('btn-name-next').style.display = 'none'
+
+        $btn.addEventListener('click', () => this._submit())
+
+        $chg.addEventListener('click', () =>
+        {
+            $qp.style.display                                      = 'none'
+            document.getElementById('lobby-name').style.display    = ''
+            document.getElementById('btn-name-next').style.display = ''
+            document.getElementById('lobby-name').focus()
+        })
+    }
+
     // ─── Step navigation ─────────────────────────────────────────────────────
 
     _bindLobbyEvents()
     {
-        const nameInput = document.getElementById('lobby-name')
+        const nameInput    = document.getElementById('lobby-name')
         const btnNameNext  = document.getElementById('btn-name-next')
         const btnColorBack = document.getElementById('btn-color-back')
         const btnColorNext = document.getElementById('btn-color-next')
@@ -152,30 +181,46 @@ export default class LobbyUI
         // Update label
         document.getElementById('lobby-step-label').textContent = `Step ${n + 1} of 3`
 
-        // Focus name input when going back to step 0
-        if(n === 0) document.getElementById('lobby-name').focus()
+        // When returning to step 0, ensure name input is visible
+        if(n === 0)
+        {
+            document.getElementById('quick-play').style.display    = 'none'
+            document.getElementById('lobby-name').style.display    = ''
+            document.getElementById('btn-name-next').style.display = ''
+            document.getElementById('lobby-name').focus()
+        }
     }
 
     _submit()
     {
-        // Persist selections for next session
         this._save()
-
-        // Apply selections to shared config before world.start() is called
-        this.config.cyberTruck = (this._carType === 'cybertruck')
-        this.config.carColor   = this._colorIdx
-
-        // Hide lobby
+        this.config.cyberTruck  = (this._carType === 'cybertruck')
+        this.config.carColor    = this._colorIdx
+        this.config.playerName  = this._name
         this.$lobby.classList.add('hidden')
 
-        // Join the room — send name, color and car type so other players see the right car
-        this.network.join(this._name, this._colorIdx, this._carType)
+        if(this.network)
+        {
+            this.network.join(this._name, this._colorIdx, this._carType)
+        }
+        else
+        {
+            // Solo mode: show hud locally and notify world to start
+            if(this.$hud)
+            {
+                this.$hud.style.display = 'block'
+                this._updateHUD()
+            }
+            this._onSoloJoin?.()
+        }
     }
 
     // ─── Network events ───────────────────────────────────────────────────────
 
     _setupNetworkEvents()
     {
+        if(!this.network) return
+
         this.network.on('disconnected', () =>
         {
             this.showToast('Connection lost — reconnecting...')
@@ -211,7 +256,7 @@ export default class LobbyUI
 
     _updateHUD()
     {
-        this.$hud.textContent = `${this._onlineCount} online`
+        if(this.$hud) this.$hud.textContent = `${this._onlineCount} online`
     }
 
     showToast(message, duration = 3000)

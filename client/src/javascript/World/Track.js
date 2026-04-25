@@ -61,9 +61,20 @@ export default class Track
         this.outerPath = outer
         this.innerPath = inner
 
+        // Expose gate data for LapTimer
+        // Gate origin = first centerline point; gate direction = tangent at that point
+        const pPrev = center[center.length - 1]
+        const pNext = center[1]
+        const gdx   = pNext.x - pPrev.x
+        const gdy   = pNext.y - pPrev.y
+        const glen  = Math.sqrt(gdx * gdx + gdy * gdy) || 1
+        this.gateOrigin = { x: center[0].x, y: center[0].y }
+        this.gateDir    = { x: gdx / glen,  y: gdy / glen  }
+
         this._createWallLoop(outer)
         this._createWallLoop(inner)
         this._createSurface(outer, inner)
+        this._createCurbs(outer, inner)
         this._createStartFinish(outer[0], inner[0])
         this._createCenterDashes(center)
     }
@@ -271,6 +282,84 @@ export default class Track
             mesh.updateMatrix()
             this.container.add(mesh)
         }
+    }
+
+    // ── curb strips (alternating red / white at track edges) ───────────────
+
+    _createCurbs(outer, inner)
+    {
+        const CURB_W = 1.3   // width of curb strip (meters inward from wall)
+        const SEG_L  = 2.5   // length of each alternating color segment
+        const Z      = SURFACE_Z + 0.012
+
+        const redGeos   = []
+        const whiteGeos = []
+        let   accLen    = 0
+
+        for(let i = 0; i < outer.length; i++)
+        {
+            const j  = (i + 1) % outer.length
+            const o  = outer[i],  oN = outer[j]
+            const ii = inner[i],  iN = inner[j]
+
+            // Outer curb: from outer[i] inward by CURB_W toward inner[i]
+            const oi  = this._insetPt(o,  ii, CURB_W)
+            const oiN = this._insetPt(oN, iN, CURB_W)
+
+            // Inner curb: from inner[i] outward by CURB_W toward outer[i]
+            const io  = this._insetPt(ii, o,  CURB_W)
+            const ioN = this._insetPt(iN, oN, CURB_W)
+
+            const segLen = Math.sqrt((oN.x - o.x) ** 2 + (oN.y - o.y) ** 2)
+            const isRed  = Math.floor(accLen / SEG_L) % 2 === 0
+            accLen      += segLen
+
+            const bucket = isRed ? redGeos : whiteGeos
+
+            bucket.push(this._quad2D(o,  oN,  oi,  oiN, Z))  // outer curb
+            bucket.push(this._quad2D(io, ioN, ii,  iN,  Z))  // inner curb
+        }
+
+        const matRed   = new THREE.MeshBasicMaterial({ color: 0xcc1111, side: THREE.DoubleSide })
+        const matWhite = new THREE.MeshBasicMaterial({ color: 0xeeeeee, side: THREE.DoubleSide })
+
+        const addMerged = (geos, mat) =>
+        {
+            if(!geos.length) return
+            const geo  = BufferGeometryUtils.mergeGeometries(geos)
+            geo.computeVertexNormals()
+            const mesh = new THREE.Mesh(geo, mat)
+            mesh.matrixAutoUpdate = false
+            mesh.updateMatrix()
+            this.container.add(mesh)
+        }
+
+        addMerged(redGeos,   matRed)
+        addMerged(whiteGeos, matWhite)
+    }
+
+    _insetPt(from, toward, dist)
+    {
+        const dx  = toward.x - from.x
+        const dy  = toward.y - from.y
+        const len = Math.sqrt(dx * dx + dy * dy) || 1
+        return { x: from.x + (dx / len) * dist, y: from.y + (dy / len) * dist }
+    }
+
+    _quad2D(a, b, c, d, z)
+    {
+        // Quad: a-b along path edge, c-d along inset edge (same z)
+        const geo = new THREE.BufferGeometry()
+        geo.setAttribute('position', new THREE.Float32BufferAttribute([
+            a.x, a.y, z,
+            c.x, c.y, z,
+            b.x, b.y, z,
+
+            b.x, b.y, z,
+            c.x, c.y, z,
+            d.x, d.y, z,
+        ], 3))
+        return geo
     }
 
     // ── dashed center line ──────────────────────────────────────────────────

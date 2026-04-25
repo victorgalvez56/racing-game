@@ -12,6 +12,11 @@ import RemoteCarManager from './RemoteCarManager.js'
 import Minimap from './Minimap.js'
 import Track from './Track.js'
 import gsap from 'gsap'
+import ControlsOverlay from '../ControlsOverlay.js'
+import LapTimer from '../LapTimer.js'
+import HUD from '../HUD.js'
+import SkidMarks from './SkidMarks.js'
+import Environment from './Environment.js'
 
 export default class World
 {
@@ -45,6 +50,20 @@ export default class World
         this.setStartingScreen()
     }
 
+    // Called by Application when resources finish loading
+    onResourcesReady()
+    {
+        this._resourcesReady = true
+        this._tryStart()
+    }
+
+    // Called by Application (via LobbyUI callback) when solo mode lobby is submitted
+    onSoloJoin()
+    {
+        this._playerJoined = true
+        this._tryStart()
+    }
+
     start()
     {
         window.setTimeout(() => { this.camera.pan.enable() }, 2000)
@@ -61,6 +80,11 @@ export default class World
         this.areas.car = this.car
         this._setupYouLabel()
         this.setMinimap()
+        this.setLapTimer()
+        this.setHUD()
+        this.setSkidMarks()
+        this.setEnvironment()
+        this._setupCameraEffects()
     }
 
     setReveal()
@@ -80,7 +104,7 @@ export default class World
             const spawn = this._serverSpawnPos || { x: 5, y: -35 }
             this.physics.car.chassis.body.sleep()
             this.physics.car.chassis.body.position.set(spawn.x, spawn.y, 12)
-            this.physics.car.chassis.body.quaternion.set(0, 0, 0, 1) // face +X (along start straight)
+            this.physics.car.chassis.body.quaternion.set(0, 0, 0, 1)
 
             window.setTimeout(() =>
             {
@@ -95,6 +119,15 @@ export default class World
             {
                 window.setTimeout(() => { this.controls.touch.reveal() }, 400)
             }
+
+            if(!this.controls.touch)
+            {
+                const overlay = new ControlsOverlay()
+                window.setTimeout(() => overlay.show(), 1500)
+            }
+
+            // Countdown then start lap timer
+            window.setTimeout(() => this._showCountdown(), 800)
         }
 
         this.time.on('tick', () =>
@@ -124,6 +157,9 @@ export default class World
         this._resourcesReady = false
         this._playerJoined   = false
 
+        // In solo mode, resources ready is the only gate (player "joins" via lobby submit)
+        // In multiplayer, we also wait for room:joined (handled in setRemoteCars)
+
         this._tryStart = () =>
         {
             if(!this._resourcesReady || !this._playerJoined) return
@@ -131,12 +167,6 @@ export default class World
             this.start()
             window.setTimeout(() => { this.reveal.go() }, 600)
         }
-
-        this.resources.on('ready', () =>
-        {
-            this._resourcesReady = true
-            this._tryStart()
-        })
     }
 
     setSounds()
@@ -148,8 +178,8 @@ export default class World
     {
         this.controls = new Controls({
             config: this.config,
-            sizes: this.sizes,
-            time: this.time,
+            sizes:  this.sizes,
+            time:   this.time,
             camera: this.camera,
             sounds: this.sounds
         })
@@ -169,10 +199,10 @@ export default class World
     setShadows()
     {
         this.shadows = new Shadows({
-            time: this.time,
-            debug: this.debugFolder,
+            time:     this.time,
+            debug:    this.debugFolder,
             renderer: this.renderer,
-            camera: this.camera
+            camera:   this.camera
         })
         this.container.add(this.shadows.container)
     }
@@ -180,13 +210,13 @@ export default class World
     setPhysics()
     {
         this.physics = new Physics({
-            config: this.config,
-            debug: this.debug,
-            scene: this.scene,
-            time: this.time,
-            sizes: this.sizes,
+            config:   this.config,
+            debug:    this.debug,
+            scene:    this.scene,
+            time:     this.time,
+            sizes:    this.sizes,
             controls: this.controls,
-            sounds: this.sounds
+            sounds:   this.sounds
         })
         this.container.add(this.physics.models.container)
     }
@@ -194,13 +224,13 @@ export default class World
     setObjects()
     {
         this.objects = new Objects({
-            time: this.time,
+            time:      this.time,
             resources: this.resources,
             materials: this.materials,
-            physics: this.physics,
-            shadows: this.shadows,
-            sounds: this.sounds,
-            debug: this.debugFolder
+            physics:   this.physics,
+            shadows:   this.shadows,
+            sounds:    this.sounds,
+            debug:     this.debugFolder
         })
         this.container.add(this.objects.container)
     }
@@ -208,19 +238,19 @@ export default class World
     setCar()
     {
         this.car = new Car({
-            time: this.time,
+            time:      this.time,
             resources: this.resources,
-            objects: this.objects,
-            physics: this.physics,
-            shadows: this.shadows,
+            objects:   this.objects,
+            physics:   this.physics,
+            shadows:   this.shadows,
             materials: this.materials,
-            controls: this.controls,
-            sounds: this.sounds,
-            renderer: this.renderer,
-            camera: this.camera,
-            debug: this.debugFolder,
-            config: this.config,
-            carColor: this.config.carColor ?? 0
+            controls:  this.controls,
+            sounds:    this.sounds,
+            renderer:  this.renderer,
+            camera:    this.camera,
+            debug:     this.debugFolder,
+            config:    this.config,
+            carColor:  this.config.carColor ?? 0
         })
         this.container.add(this.car.container)
     }
@@ -228,103 +258,16 @@ export default class World
     setAreas()
     {
         this.areas = new Areas({
-            config: this.config,
+            config:    this.config,
             resources: this.resources,
-            debug: this.debug,
-            renderer: this.renderer,
-            camera: this.camera,
-            car: this.car,
-            sounds: this.sounds,
-            time: this.time
+            debug:     this.debug,
+            renderer:  this.renderer,
+            camera:    this.camera,
+            car:       this.car,
+            sounds:    this.sounds,
+            time:      this.time
         })
         this.container.add(this.areas.container)
-    }
-
-    _setupSnapshotSender()
-    {
-        let _lastSend = 0
-        this.time.on('tick', () =>
-        {
-            if(!this.network || !this.physics) return
-            const now = Date.now()
-            if(now - _lastSend < 50) return
-            _lastSend = now
-
-            const body  = this.physics.car.chassis.body
-            const infos = this.physics.car.vehicle.wheelInfos
-
-            const wheels = infos.map(w => ({
-                pos:  [w.worldTransform.position.x,   w.worldTransform.position.y,   w.worldTransform.position.z],
-                quat: [w.worldTransform.quaternion.x, w.worldTransform.quaternion.y, w.worldTransform.quaternion.z, w.worldTransform.quaternion.w],
-            }))
-
-            this.network.sendSnapshot({
-                pos:    [body.position.x,        body.position.y,        body.position.z],
-                quat:   [body.quaternion.x,      body.quaternion.y,      body.quaternion.z,      body.quaternion.w],
-                vel:    [body.velocity.x,        body.velocity.y,        body.velocity.z],
-                angVel: [body.angularVelocity.x, body.angularVelocity.y, body.angularVelocity.z],
-                wheels,
-            })
-        })
-    }
-
-    _setupBumpHandling()
-    {
-        // When local car hits a remote car, relay the bump so their car reacts
-        this.physics.car.onBump = (targetId, fromPos) =>
-        {
-            this.network.sendBump(targetId, fromPos)
-            this._shakeCamera()
-        }
-
-        // When a remote car hits us, apply the incoming impulse to our car
-        this.network.on('player:bumped', ({ fromPos }) =>
-        {
-            this.physics.car.receiveBump(fromPos)
-            this.sounds.play('carHit', 10)
-            this._shakeCamera()
-        })
-    }
-
-    _shakeCamera()
-    {
-        const canvas = document.querySelector('canvas')
-        if(!canvas) return
-        // Snap to random offset, then ease back — pure CSS, no camera math needed
-        canvas.style.transition = 'none'
-        canvas.style.transform = `translate(${(Math.random() - 0.5) * 10}px, ${(Math.random() - 0.5) * 10}px) rotate(${(Math.random() - 0.5) * 0.6}deg)`
-        requestAnimationFrame(() =>
-        {
-            canvas.style.transition = 'transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
-            canvas.style.transform  = 'translate(0, 0) rotate(0deg)'
-        })
-    }
-
-    _setupYouLabel()
-    {
-        const $you = document.getElementById('mp-you')
-        if(!$you) return
-
-        // Show player name above local car
-        $you.textContent = this.network?.localPlayerName || 'YOU'
-        $you.style.display = 'block'
-
-        this.time.on('tick', () =>
-        {
-            if(!this.car?.chassis?.object) return
-
-            const worldPos = this.car.chassis.object.position.clone()
-            worldPos.z += 1.5
-            const projected = worldPos.project(this.camera.instance)
-
-            if(projected.z > 1) { $you.style.display = 'none'; return }
-
-            const x = (projected.x *  0.5 + 0.5) * this.sizes.viewport.width
-            const y = (projected.y * -0.5 + 0.5) * this.sizes.viewport.height
-            $you.style.display = 'block'
-            $you.style.left = `${x}px`
-            $you.style.top  = `${y}px`
-        })
     }
 
     setTrack()
@@ -335,6 +278,40 @@ export default class World
             resources:     this.resources,
         })
         this.container.add(this.track.container)
+    }
+
+    setLapTimer()
+    {
+        this.lapTimer = new LapTimer()
+
+        if(this.track?.gateOrigin && this.track?.gateDir)
+        {
+            this.lapTimer.setGate(this.track.gateOrigin, this.track.gateDir)
+        }
+
+        this.time.on('tick', () =>
+        {
+            if(this.physics && this.lapTimer._active)
+            {
+                this.lapTimer.tick(this.physics.car.chassis.body)
+            }
+        })
+    }
+
+    setHUD()
+    {
+        this.hud = new HUD({
+            lapTimer: this.lapTimer,
+            physics:  this.physics,
+        })
+
+        this.time.on('tick', () =>
+        {
+            if(this.hud && this.lapTimer._active)
+            {
+                this.hud.update()
+            }
+        })
     }
 
     setMinimap()
@@ -378,5 +355,189 @@ export default class World
         })
 
         this.time.on('tick', () => { this.remoteCarManager.update() })
+    }
+
+    _setupSnapshotSender()
+    {
+        let _lastSend = 0
+        this.time.on('tick', () =>
+        {
+            if(!this.network || !this.physics) return
+            const now = Date.now()
+            if(now - _lastSend < 50) return
+            _lastSend = now
+
+            const body  = this.physics.car.chassis.body
+            const infos = this.physics.car.vehicle.wheelInfos
+
+            const wheels = infos.map(w => ({
+                pos:  [w.worldTransform.position.x,   w.worldTransform.position.y,   w.worldTransform.position.z],
+                quat: [w.worldTransform.quaternion.x, w.worldTransform.quaternion.y, w.worldTransform.quaternion.z, w.worldTransform.quaternion.w],
+            }))
+
+            this.network.sendSnapshot({
+                pos:    [body.position.x,        body.position.y,        body.position.z],
+                quat:   [body.quaternion.x,      body.quaternion.y,      body.quaternion.z,      body.quaternion.w],
+                vel:    [body.velocity.x,        body.velocity.y,        body.velocity.z],
+                angVel: [body.angularVelocity.x, body.angularVelocity.y, body.angularVelocity.z],
+                wheels,
+            })
+        })
+    }
+
+    _setupBumpHandling()
+    {
+        this.physics.car.onBump = (targetId, fromPos) =>
+        {
+            this.network.sendBump(targetId, fromPos)
+            this._shakeCamera()
+        }
+
+        this.network.on('player:bumped', ({ fromPos }) =>
+        {
+            this.physics.car.receiveBump(fromPos)
+            this.sounds.play('carHit', 10)
+            this._shakeCamera()
+        })
+    }
+
+    _shakeCamera()
+    {
+        const canvas = document.querySelector('canvas')
+        if(!canvas) return
+        canvas.style.transition = 'none'
+        canvas.style.transform  = `translate(${(Math.random() - 0.5) * 10}px, ${(Math.random() - 0.5) * 10}px) rotate(${(Math.random() - 0.5) * 0.6}deg)`
+        requestAnimationFrame(() =>
+        {
+            canvas.style.transition = 'transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+            canvas.style.transform  = 'translate(0, 0) rotate(0deg)'
+        })
+    }
+
+    _setupYouLabel()
+    {
+        const $you = document.getElementById('mp-you')
+        if(!$you) return
+
+        $you.textContent   = this.network?.localPlayerName || this.config.playerName || 'YOU'
+        $you.style.display = 'block'
+
+        this.time.on('tick', () =>
+        {
+            if(!this.car?.chassis?.object) return
+
+            const worldPos = this.car.chassis.object.position.clone()
+            worldPos.z    += 1.5
+            const projected = worldPos.project(this.camera.instance)
+
+            if(projected.z > 1) { $you.style.display = 'none'; return }
+
+            const x = (projected.x *  0.5 + 0.5) * this.sizes.viewport.width
+            const y = (projected.y * -0.5 + 0.5) * this.sizes.viewport.height
+            $you.style.display = 'block'
+            $you.style.left    = `${x}px`
+            $you.style.top     = `${y}px`
+        })
+    }
+
+    setSkidMarks()
+    {
+        this.skidMarks = new SkidMarks({ physics: this.physics })
+        this.container.add(this.skidMarks.container)
+        this.time.on('tick', () => { this.skidMarks.update() })
+    }
+
+    setEnvironment()
+    {
+        this.environment = new Environment({
+            resources: this.resources,
+            renderer:  this.renderer,
+        })
+        this.container.add(this.environment.container)
+    }
+
+    _setupCameraEffects()
+    {
+        const FOV_BASE  = 40
+        const FOV_MAX   = 58
+        const FOV_EASE  = 0.05
+
+        let fovCurrent  = FOV_BASE
+
+        const LOOK_MAX  = 4.0   // max look-ahead offset (world units)
+        const LOOK_EASE = 0.07
+
+        let lx = 0, ly = 0     // current eased look-ahead offset
+
+        this.time.on('tick', () =>
+        {
+            if(!this.car?.chassis?.object) return
+
+            const carPos = this.car.chassis.object.position
+
+            // Speed-based FOV
+            const vel   = this.physics.car.chassis.body.velocity
+            const speed = Math.sqrt(vel.x ** 2 + vel.y ** 2)
+            const norm  = Math.min(speed / 22, 1)
+
+            fovCurrent += (THREE.MathUtils.lerp(FOV_BASE, FOV_MAX, norm) - fovCurrent) * FOV_EASE
+            this.camera.instance.fov = fovCurrent
+            this.camera.instance.updateProjectionMatrix()
+
+            // Steering look-ahead: project a bit in the car's lateral direction
+            const quat  = this.physics.car.chassis.body.quaternion
+            const hx    =  1 - 2 * (quat.y * quat.y + quat.z * quat.z)
+            const hy    =  2 * (quat.x * quat.y + quat.z * quat.w)
+            // Car's right direction: (hy, -hx) in XY plane
+            const steer = (this.controls.actions.right ? 1 : 0) - (this.controls.actions.left ? 1 : 0)
+            const ahead = norm * steer * LOOK_MAX
+
+            const txTarget = carPos.x + hy  * ahead
+            const tyTarget = carPos.y - hx  * ahead
+
+            lx += (txTarget - lx) * LOOK_EASE
+            ly += (tyTarget - ly) * LOOK_EASE
+
+            this.camera.target.x = lx
+            this.camera.target.y = ly
+        })
+    }
+
+    _showCountdown()
+    {
+        const $overlay = document.getElementById('countdown-overlay')
+        const $num     = document.getElementById('countdown-num')
+        if(!$overlay || !$num) return
+
+        $overlay.style.display = 'flex'
+
+        const seq = ['3', '2', '1', 'GO!']
+        let i = 0
+
+        const step = () =>
+        {
+            $num.textContent       = seq[i]
+            $num.style.animation   = 'none'
+            void $num.offsetWidth  // force reflow to restart animation
+            $num.style.animation   = 'countdown-pop 0.95s ease-out forwards'
+
+            i++
+            if(i < seq.length)
+            {
+                setTimeout(step, 1000)
+            }
+            else
+            {
+                setTimeout(() =>
+                {
+                    $overlay.style.display = 'none'
+                    // Start lap timer and show HUD after GO!
+                    if(this.lapTimer) this.lapTimer.start()
+                    if(this.hud)      this.hud.show()
+                }, 950)
+            }
+        }
+
+        step()
     }
 }

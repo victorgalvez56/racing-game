@@ -157,16 +157,287 @@
             transition: background 0.2s;
         }
         .lobby-dot.active { background: #fff; }
+
+        /* ── Loading screen ── */
+        #loading-screen {
+            position: fixed;
+            inset: 0;
+            background: #0a0a0a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            transition: opacity 0.6s;
+            font-family: 'Comic Neue', monospace;
+        }
+        #loading-screen.fade-out { opacity: 0; pointer-events: none; }
+        #loading-content { text-align: center; color: #fff; width: 300px; }
+        #loading-title { font-size: 28px; font-weight: 700; letter-spacing: 1px; margin-bottom: 36px; }
+        #loading-bar-track {
+            height: 3px;
+            background: #1e1e1e;
+            border-radius: 2px;
+            margin-bottom: 18px;
+            overflow: hidden;
+        }
+        #loading-bar-fill {
+            height: 100%;
+            background: #fff;
+            width: 0%;
+            border-radius: 2px;
+            transition: width 0.25s ease;
+        }
+        #loading-tip {
+            font-size: 12px;
+            color: #555;
+            min-height: 18px;
+            transition: opacity 0.3s;
+            letter-spacing: 0.5px;
+        }
+
+        /* ── Quick-play ── */
+        #quick-play {
+            display: none;
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #1e1e1e;
+        }
+
+        /* ── Leaderboard panel ── */
+        #leaderboard {
+            position: fixed;
+            top: 50%;
+            left: 16px;
+            transform: translateY(-50%) translateX(-120%);
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 10px;
+            padding: 14px 18px;
+            font-family: monospace;
+            color: #fff;
+            z-index: 500;
+            pointer-events: none;
+            min-width: 190px;
+            transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        #leaderboard.visible {
+            transform: translateY(-50%) translateX(0);
+        }
+        #lb-title {
+            font-size: 9px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.35);
+            margin-bottom: 10px;
+        }
+        #lb-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        #lb-list li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            font-size: 13px;
+        }
+        #lb-list li .lb-rank { color: rgba(255,255,255,0.3); font-size: 10px; }
+        #lb-list li .lb-time { color: #fff; letter-spacing: 1px; }
+        #lb-list li.lb-best  .lb-time { color: #f1c40f; }
+
+        /* ── Mode select screen ── */
+        #mode-screen {
+            position: fixed;
+            inset: 0;
+            background: #0a0a0a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1100;
+            font-family: 'Comic Neue', monospace;
+        }
+        #mode-screen.hidden { display: none; }
+
+        .mode-grid {
+            display: flex;
+            gap: 16px;
+            margin-top: 8px;
+        }
+        .mode-btn {
+            flex: 1;
+            background: #1a1a1a;
+            border: 2px solid #2a2a2a;
+            border-radius: 12px;
+            padding: 28px 20px 22px;
+            cursor: pointer;
+            text-align: center;
+            color: #fff;
+            font-family: 'Comic Neue', monospace;
+            transition: border-color 0.15s, background 0.15s;
+        }
+        .mode-btn:hover { border-color: #fff; background: #1e1e1e; }
+        .mode-btn .mode-icon { font-size: 42px; margin-bottom: 12px; }
+        .mode-btn .mode-name { font-size: 16px; font-weight: 700; letter-spacing: 1px; }
+        .mode-btn .mode-desc { font-size: 11px; color: #555; margin-top: 6px; letter-spacing: 0.5px; }
+
+        /* ── Race HUD ── */
+        #race-hud {
+            position: fixed;
+            top: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            font-family: monospace;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 10px;
+            padding: 10px 24px 12px;
+            min-width: 210px;
+            z-index: 500;
+            pointer-events: none;
+        }
+        #hud-lap {
+            font-size: 10px;
+            color: rgba(255,255,255,0.4);
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-bottom: 2px;
+        }
+        #hud-time {
+            font-size: 30px;
+            font-weight: bold;
+            color: #fff;
+            letter-spacing: 2px;
+            line-height: 1;
+        }
+        #hud-best {
+            font-size: 10px;
+            color: rgba(255,255,255,0.35);
+            margin-top: 5px;
+            letter-spacing: 1px;
+        }
+        #hud-delta {
+            font-size: 13px;
+            font-weight: bold;
+            min-height: 18px;
+            margin-top: 1px;
+            letter-spacing: 1px;
+        }
+
+        /* Speed (bottom-right) */
+        #hud-speed {
+            display: none;
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            font-family: monospace;
+            font-size: 28px;
+            font-weight: bold;
+            color: rgba(255,255,255,0.6);
+            z-index: 500;
+            pointer-events: none;
+            line-height: 1;
+        }
+        #hud-speed::after {
+            content: ' km/h';
+            font-size: 11px;
+            color: rgba(255,255,255,0.3);
+            letter-spacing: 1px;
+        }
+
+        /* Lap note (center-screen popup) */
+        #hud-lap-note {
+            position: fixed;
+            top: 42%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: monospace;
+            font-size: 20px;
+            font-weight: bold;
+            color: #fff;
+            z-index: 600;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.4s;
+            text-align: center;
+            text-shadow: 0 0 30px rgba(255,255,255,0.4);
+            white-space: nowrap;
+        }
+
+        /* Countdown overlay */
+        #countdown-overlay {
+            position: fixed;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 700;
+            pointer-events: none;
+        }
+        #countdown-num {
+            font-family: 'Comic Neue', monospace;
+            font-size: 130px;
+            font-weight: 700;
+            color: #fff;
+            text-shadow: 0 0 80px rgba(255,255,255,0.35);
+        }
+        @keyframes countdown-pop {
+            0%   { transform: scale(1.9); opacity: 0; }
+            25%  { transform: scale(1.0); opacity: 1; }
+            70%  { transform: scale(1.0); opacity: 1; }
+            100% { transform: scale(0.6); opacity: 0; }
+        }
+
     </style>
 </head>
 <body>
 
     <canvas class="canvas js-canvas"></canvas>
 
+    <!-- ── Mode selection (shown first, above lobby) ── -->
+    <div id="mode-screen">
+        <div class="lobby-card" style="max-width:460px;">
+            <div class="lobby-title">🏎 Racing Game</div>
+            <div class="lobby-step-label" style="margin-bottom:32px;">Select mode</div>
+            <div class="mode-grid">
+                <button class="mode-btn" id="btn-solo-mode">
+                    <div class="mode-icon">🏁</div>
+                    <div class="mode-name">Solo</div>
+                    <div class="mode-desc">Time trial · beat your best lap</div>
+                </button>
+                <button class="mode-btn" id="btn-multi-mode">
+                    <div class="mode-icon">👥</div>
+                    <div class="mode-name">Multiplayer</div>
+                    <div class="mode-desc">Race against others online</div>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Loading screen ── -->
+    <div id="loading-screen">
+        <div id="loading-content">
+            <div id="loading-title">🏎 Racing Game</div>
+            <div id="loading-bar-track">
+                <div id="loading-bar-fill"></div>
+            </div>
+            <div id="loading-tip"></div>
+        </div>
+    </div>
+
     <!-- ── Lobby overlay ── -->
     <div id="lobby">
         <div class="lobby-card">
             <div class="lobby-title">🏎 Racing Game</div>
+
             <div class="lobby-step-label" id="lobby-step-label">Step 1 of 3</div>
 
             <div class="lobby-dots">
@@ -177,6 +448,14 @@
 
             <!-- Step 1: Name -->
             <div class="step active" id="step-0">
+                <!-- Quick-play for returning players -->
+                <div id="quick-play">
+                    <button class="lobby-btn" id="btn-quick-play">▶ Play as <span id="quick-play-name"></span></button>
+                    <div style="text-align:center;margin-top:12px;">
+                        <button id="btn-change-settings" style="background:none;border:none;color:#444;font-family:'Comic Neue',monospace;font-size:12px;cursor:pointer;letter-spacing:1px;">Change settings</button>
+                    </div>
+                </div>
+
                 <input
                     id="lobby-name"
                     class="lobby-input"
@@ -359,6 +638,31 @@
                 cursor: pointer;
             ">↵</button>
         </form>
+    </div>
+
+    <!-- Leaderboard panel -->
+    <div id="leaderboard">
+        <div id="lb-title">Best Laps</div>
+        <ol id="lb-list"></ol>
+    </div>
+
+    <!-- Race HUD -->
+    <div id="race-hud">
+        <div id="hud-lap">LAP 1</div>
+        <div id="hud-time">00:00.000</div>
+        <div id="hud-best"></div>
+        <div id="hud-delta"></div>
+    </div>
+
+    <!-- Speed indicator -->
+    <div id="hud-speed">0</div>
+
+    <!-- Lap completion note -->
+    <div id="hud-lap-note"></div>
+
+    <!-- Countdown overlay -->
+    <div id="countdown-overlay">
+        <div id="countdown-num"></div>
     </div>
 
     <!-- Toast for join/leave events -->

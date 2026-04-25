@@ -22,8 +22,8 @@ export default class Application
     {
         this.$canvas = _options.$canvas
 
-        this.time = new Time()
-        this.sizes = new Sizes()
+        this.time      = new Time()
+        this.sizes     = new Sizes()
         this.resources = new Resources()
 
         this.setConfig()
@@ -31,22 +31,31 @@ export default class Application
         this.setRenderer()
         this.setCamera()
         this.setPasses()
-        this.setNetwork()
-        this.setWorld()
-        this.setTitle()
+
+        // Track resource state so we can notify World even if it's created after ready fires
+        this._resourcesReady = false
+        this.resources.on('ready', () =>
+        {
+            this._resourcesReady = true
+            this.world?.onResourcesReady()
+        })
+
+        this._setupLoadingScreen()
+        this._setupModeScreen()
     }
 
     setConfig()
     {
         this.config = {}
-        this.config.debug = window.location.hash === '#debug'
+        this.config.debug      = window.location.hash === '#debug'
         this.config.cyberTruck = window.location.hash === '#cybertruck'
-        this.config.touch = false
+        this.config.touch      = false
+        this.config.soloMode   = false
 
         window.addEventListener('touchstart', () =>
         {
             this.config.touch = true
-            this.world.controls.setTouch()
+            this.world?.controls.setTouch()
 
             this.passes.horizontalBlurPass.strength = 1
             this.passes.horizontalBlurPass.material.uniforms.uStrength.value = new THREE.Vector2(this.passes.horizontalBlurPass.strength, 0)
@@ -86,23 +95,14 @@ export default class Application
     setCamera()
     {
         this.camera = new Camera({
-            time: this.time,
-            sizes: this.sizes,
+            time:     this.time,
+            sizes:    this.sizes,
             renderer: this.renderer,
-            debug: this.debug,
-            config: this.config
+            debug:    this.debug,
+            config:   this.config
         })
 
         this.scene.add(this.camera.container)
-
-        this.time.on('tick', () =>
-        {
-            if(this.world && this.world.car)
-            {
-                this.camera.target.x = this.world.car.chassis.object.position.x
-                this.camera.target.y = this.world.car.chassis.object.position.y
-            }
-        })
     }
 
     setPasses()
@@ -114,26 +114,26 @@ export default class Application
             this.passes.debugFolder = this.debug.addFolder('postprocess')
         }
 
-        this.passes.composer = new EffectComposer(this.renderer)
-        this.passes.renderPass = new RenderPass(this.scene, this.camera.instance)
+        this.passes.composer    = new EffectComposer(this.renderer)
+        this.passes.renderPass  = new RenderPass(this.scene, this.camera.instance)
 
         this.passes.horizontalBlurPass = new ShaderPass(BlurPass)
         this.passes.horizontalBlurPass.strength = this.config.touch ? 0 : 1
         this.passes.horizontalBlurPass.material.uniforms.uResolution.value = new THREE.Vector2(this.sizes.viewport.width, this.sizes.viewport.height)
-        this.passes.horizontalBlurPass.material.uniforms.uStrength.value = new THREE.Vector2(this.passes.horizontalBlurPass.strength, 0)
+        this.passes.horizontalBlurPass.material.uniforms.uStrength.value   = new THREE.Vector2(this.passes.horizontalBlurPass.strength, 0)
 
         this.passes.verticalBlurPass = new ShaderPass(BlurPass)
         this.passes.verticalBlurPass.strength = this.config.touch ? 0 : 1
         this.passes.verticalBlurPass.material.uniforms.uResolution.value = new THREE.Vector2(this.sizes.viewport.width, this.sizes.viewport.height)
-        this.passes.verticalBlurPass.material.uniforms.uStrength.value = new THREE.Vector2(0, this.passes.verticalBlurPass.strength)
+        this.passes.verticalBlurPass.material.uniforms.uStrength.value   = new THREE.Vector2(0, this.passes.verticalBlurPass.strength)
 
         this.passes.glowsPass = new ShaderPass(GlowsPass)
         this.passes.glowsPass.color = '#ffcfe0'
         this.passes.glowsPass.material.uniforms.uPosition.value = new THREE.Vector2(0, 0.25)
-        this.passes.glowsPass.material.uniforms.uRadius.value = 0.7
-        this.passes.glowsPass.material.uniforms.uColor.value = new THREE.Color(this.passes.glowsPass.color)
+        this.passes.glowsPass.material.uniforms.uRadius.value   = 0.7
+        this.passes.glowsPass.material.uniforms.uColor.value    = new THREE.Color(this.passes.glowsPass.color)
         this.passes.glowsPass.material.uniforms.uColor.value.convertLinearToSRGB()
-        this.passes.glowsPass.material.uniforms.uAlpha.value = 0.55
+        this.passes.glowsPass.material.uniforms.uAlpha.value    = 0.55
 
         this.passes.composer.addPass(this.passes.renderPass)
         this.passes.composer.addPass(this.passes.horizontalBlurPass)
@@ -143,7 +143,7 @@ export default class Application
         this.time.on('tick', () =>
         {
             this.passes.horizontalBlurPass.enabled = this.passes.horizontalBlurPass.material.uniforms.uStrength.value.x > 0
-            this.passes.verticalBlurPass.enabled = this.passes.verticalBlurPass.material.uniforms.uStrength.value.y > 0
+            this.passes.verticalBlurPass.enabled   = this.passes.verticalBlurPass.material.uniforms.uStrength.value.y > 0
             this.passes.composer.render()
         })
 
@@ -153,32 +153,116 @@ export default class Application
             this.passes.composer.setSize(this.sizes.viewport.width, this.sizes.viewport.height)
             this.passes.horizontalBlurPass.material.uniforms.uResolution.value.x = this.sizes.viewport.width
             this.passes.horizontalBlurPass.material.uniforms.uResolution.value.y = this.sizes.viewport.height
-            this.passes.verticalBlurPass.material.uniforms.uResolution.value.x = this.sizes.viewport.width
-            this.passes.verticalBlurPass.material.uniforms.uResolution.value.y = this.sizes.viewport.height
+            this.passes.verticalBlurPass.material.uniforms.uResolution.value.x   = this.sizes.viewport.width
+            this.passes.verticalBlurPass.material.uniforms.uResolution.value.y   = this.sizes.viewport.height
         })
+    }
+
+    _setupModeScreen()
+    {
+        const $screen = document.getElementById('mode-screen')
+        if(!$screen) return
+
+        const pick = (mode) =>
+        {
+            $screen.classList.add('hidden')
+            this.config.soloMode = (mode === 'solo')
+            this._initGame()
+        }
+
+        document.getElementById('btn-solo-mode') ?.addEventListener('click', () => pick('solo'))
+        document.getElementById('btn-multi-mode')?.addEventListener('click', () => pick('multi'))
+    }
+
+    _initGame()
+    {
+        this.setNetwork()
+        this.setWorld()
+        this.setTitle()
+
+        // Resources may have already finished loading before World was created
+        if(this._resourcesReady) this.world.onResourcesReady()
     }
 
     setNetwork()
     {
-        this.network = new Network()
-        this.network.connect()
-        this.lobbyUI = new LobbyUI({ network: this.network, config: this.config })
-        this.chat = new Chat({ network: this.network })
+        if(!this.config.soloMode)
+        {
+            this.network = new Network()
+            this.network.connect()
+            this.chat    = new Chat({ network: this.network })
+        }
+        else
+        {
+            this.network = null
+        }
+
+        this.lobbyUI = new LobbyUI({
+            network:    this.network,
+            config:     this.config,
+            onSoloJoin: () => this.world?.onSoloJoin(),
+        })
+    }
+
+    _setupLoadingScreen()
+    {
+        const $screen = document.getElementById('loading-screen')
+        const $fill   = document.getElementById('loading-bar-fill')
+        const $tip    = document.getElementById('loading-tip')
+        if(!$screen) return
+
+        const tips = [
+            '💡 WASD or arrow keys to drive',
+            '💡 Hold Shift to boost',
+            '🛑 Space or Ctrl to brake',
+            '🔄 Press R if you get stuck',
+            '💬 Press Enter to open chat',
+            '🏎 Beat your best lap time',
+        ]
+        let tipIdx = 0
+        $tip.textContent = tips[0]
+
+        const tipInterval = setInterval(() =>
+        {
+            $tip.style.opacity = '0'
+            setTimeout(() =>
+            {
+                tipIdx = (tipIdx + 1) % tips.length
+                $tip.textContent   = tips[tipIdx]
+                $tip.style.opacity = '1'
+            }, 300)
+        }, 2500)
+
+        this.resources.on('progress', (ratio) =>
+        {
+            $fill.style.width = `${Math.round(ratio * 100)}%`
+        })
+
+        this.resources.on('ready', () =>
+        {
+            clearInterval(tipInterval)
+            $fill.style.width = '100%'
+            setTimeout(() =>
+            {
+                $screen.classList.add('fade-out')
+                setTimeout(() => $screen.remove(), 700)
+            }, 400)
+        })
     }
 
     setWorld()
     {
         this.world = new World({
-            config: this.config,
-            debug: this.debug,
+            config:    this.config,
+            debug:     this.debug,
             resources: this.resources,
-            time: this.time,
-            sizes: this.sizes,
-            camera: this.camera,
-            scene: this.scene,
-            renderer: this.renderer,
-            passes: this.passes,
-            network: this.network
+            time:      this.time,
+            sizes:     this.sizes,
+            camera:    this.camera,
+            scene:     this.scene,
+            renderer:  this.renderer,
+            passes:    this.passes,
+            network:   this.network
         })
         this.scene.add(this.world.container)
     }
@@ -186,15 +270,15 @@ export default class Application
     setTitle()
     {
         this.title = {}
-        this.title.frequency = 300
-        this.title.width = 20
-        this.title.position = 0
-        this.title.$element = document.querySelector('title')
+        this.title.frequency        = 300
+        this.title.width            = 20
+        this.title.position         = 0
+        this.title.$element         = document.querySelector('title')
         this.title.absolutePosition = Math.round(this.title.width * 0.25)
 
         this.time.on('tick', () =>
         {
-            if(this.world.physics)
+            if(this.world && this.world.physics)
             {
                 this.title.absolutePosition += this.world.physics.car.forwardSpeed
                 if(this.title.absolutePosition < 0) this.title.absolutePosition = 0

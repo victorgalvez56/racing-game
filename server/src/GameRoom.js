@@ -98,6 +98,31 @@ export class GameRoom {
         })
       })
 
+      socket.on('combat:missile', (data) => {
+        console.log(`[combat] missile from ${socket.id}`, data)
+        socket.broadcast.emit('combat:missile', { fromId: socket.id, ...data })
+      })
+
+      socket.on('player:combatDamage', ({ targetId, amount }) => {
+        console.log(`[combat] damage from ${socket.id} → ${targetId} (${amount}hp)`)
+        const targetSocket = this.io.sockets.sockets.get(targetId)
+        if (targetSocket) {
+          targetSocket.emit('player:combatDamage', { fromId: socket.id, amount })
+        } else {
+          console.warn(`[combat] target socket ${targetId} not found`)
+        }
+      })
+
+      socket.on('combat:explosion', (data) => {
+        // Broadcast explosion position to all other players
+        socket.broadcast.emit('combat:explosion', { fromId: socket.id, ...data })
+      })
+
+      socket.on('combat:carDestroyed', (data) => {
+        console.log(`[combat] car destroyed: ${socket.id}`)
+        socket.broadcast.emit('combat:carDestroyed', { fromId: socket.id, ...data })
+      })
+
       socket.on('player:snapshot', (state) => {
         // Client sends its own authoritative physics state.
         // We cache it and use it in world:snapshot broadcasts so that remote

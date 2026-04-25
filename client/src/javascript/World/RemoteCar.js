@@ -175,6 +175,13 @@ export default class RemoteCar
 
     // ── snapshot handling ───────────────────────────────────────────────────
 
+    setVisible(visible)
+    {
+        if(this.chassis?.object) this.chassis.object.visible = visible
+        this.wheels?.forEach(w => { if(w.object) w.object.visible = visible })
+        if(this.label?.$element) this.label.$element.style.display = visible ? '' : 'none'
+    }
+
     addSnapshot(snapshot)
     {
         this.snapshots.push({

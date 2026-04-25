@@ -74,6 +74,30 @@ export default class Network extends EventEmitter
             this.trigger('chat:message', [data])
         })
 
+        this.socket.on('combat:missile', (data) =>
+        {
+            console.log('[net] ← combat:missile received', data)
+            this.trigger('combat:missile', [data])
+        })
+
+        this.socket.on('player:combatDamage', (data) =>
+        {
+            console.log('[net] ← player:combatDamage received', data)
+            this.trigger('player:combatDamage', [data])
+        })
+
+        this.socket.on('combat:explosion', (data) =>
+        {
+            console.log('[net] ← combat:explosion received', data)
+            this.trigger('combat:explosion', [data])
+        })
+
+        this.socket.on('combat:carDestroyed', (data) =>
+        {
+            console.log('[net] ← combat:carDestroyed received', data)
+            this.trigger('combat:carDestroyed', [data])
+        })
+
         // Latency measurement
         this._pingInterval = setInterval(() =>
         {
@@ -111,6 +135,27 @@ export default class Network extends EventEmitter
     sendChat(text)
     {
         this.socket.emit('chat:message', { text })
+    }
+
+    sendMissileFired(x, y, z, dx, dy)
+    {
+        console.log('[net] → combat:missile sent', { x, y, z, dx, dy })
+        this.socket.emit('combat:missile', { x, y, z, dx, dy })
+    }
+
+    sendCombatDamage(targetId, amount)
+    {
+        this.socket.emit('player:combatDamage', { targetId, amount })
+    }
+
+    sendExplosion(x, y, z)
+    {
+        this.socket.emit('combat:explosion', { x, y, z })
+    }
+
+    sendCarDestroyed(x, y, z, vx, vy, color)
+    {
+        this.socket.emit('combat:carDestroyed', { x, y, z, vx, vy, color })
     }
 
     playerReady()

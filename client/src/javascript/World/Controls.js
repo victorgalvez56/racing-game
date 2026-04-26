@@ -226,7 +226,7 @@ export default class Controls extends EventEmitter
             active:  false,
             touchId: null,
             current: { x: 0, y: 0 },
-            center:  { x: 0, y: 0 },
+            origin:  { x: 0, y: 0 },     // where the finger first landed
         }
 
         const $j = document.createElement('div')
@@ -239,34 +239,28 @@ export default class Controls extends EventEmitter
         joy.$element = $j
         joy.$cursor  = $j.querySelector('.rl-touch-joystick-cursor')
 
-        // Track joystick center (recompute after layout + on resize)
-        const updateCenter = () =>
-        {
-            const r = $j.getBoundingClientRect()
-            joy.center.x = r.left + r.width / 2
-            joy.center.y = r.top  + r.height / 2
-        }
-        this.sizes.on('resize', updateCenter)
-        requestAnimationFrame(updateCenter)
-
-        // 2-axis steering: X = left/right, Y = forward/back. Joystick is
-        // refcounted as a source for up/down so it composes with the
-        // forward / backward / boost buttons without one cancelling the
-        // other on release.
+        // 2-axis steering: X = left/right, Y = forward/back.
+        //
+        // Deflection is measured from where the FINGER first landed, not
+        // the geometric center of the element. That way casual contact
+        // anywhere inside the joystick is treated as neutral — only an
+        // intentional drag from the touch origin counts as input. Fixes
+        // the case where the player's thumb naturally lands in the lower
+        // half of the joystick and the car immediately reverses.
         this.time.on('tick', () =>
         {
             if(!joy.active) return
 
-            const dx = joy.current.x - joy.center.x
-            const dy = joy.current.y - joy.center.y
-            const DZ = 12   // deadzone in px
+            const dx = joy.current.x - joy.origin.x
+            const dy = joy.current.y - joy.origin.y
+            const DZ = 14   // deadzone in px (relative to touch origin)
 
             const left  = dx < -DZ
             const right = dx >  DZ
             const up    = dy < -DZ
             const down  = dy >  DZ
 
-            // Update refcount sets (joystick is a source for up/down)
+            // Refcount: joystick is one of several sources of up/down
             if(up)   this._upHeldBy.add('joystick');   else this._upHeldBy.delete('joystick')
             if(down) this._downHeldBy.add('joystick'); else this._downHeldBy.delete('joystick')
             const newUp   = this._upHeldBy.size   > 0
@@ -285,14 +279,16 @@ export default class Controls extends EventEmitter
 
             if(changed) this._sendInput()
 
-            // Cursor follows touch, capped to 50px radius
+            // Cursor visualization: also relative to origin so the visual
+            // matches where the user feels their thumb has moved
             const dist = Math.min(Math.hypot(dx, dy), 50)
             const ang  = Math.atan2(dy, dx)
             joy.$cursor.style.transform =
                 `translate(${Math.cos(ang) * dist}px, ${Math.sin(ang) * dist}px)`
         })
 
-        // Capture touch on the joystick itself…
+        // Touchstart: snapshot the landing point as the new origin so the
+        // first frame doesn't read any deflection from a casual contact.
         $j.addEventListener('touchstart', (e) =>
         {
             e.preventDefault()
@@ -300,6 +296,8 @@ export default class Controls extends EventEmitter
             if(!t) return
             joy.active    = true
             joy.touchId   = t.identifier
+            joy.origin.x  = t.clientX
+            joy.origin.y  = t.clientY
             joy.current.x = t.clientX
             joy.current.y = t.clientY
             this.camera?.pan?.reset?.()

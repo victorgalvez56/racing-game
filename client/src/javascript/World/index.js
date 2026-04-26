@@ -850,6 +850,9 @@ export default class World
         if($wpn) $wpn.style.display = 'block'
         this._updateCombatHUD()
 
+        // Show the touch fire button if the user is on a touch device
+        this.controls.touch?.showFire?.()
+
         // ── Hazard zones (boost + healing) — only meaningful inside the arena ──
         this.hazardZones = new HazardZones({
             scene:        this.scene,

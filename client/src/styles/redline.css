@@ -1201,3 +1201,269 @@
     .rl-card       { padding: var(--rl-3); gap: var(--rl-2); }
     .rl-card-desc  { display: none; }
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   TOUCH CONTROLS — joystick (left) + action buttons (right)
+   Only visible on touch devices; auto-hidden on hover-capable pointers
+   ───────────────────────────────────────────────────────────────────────── */
+
+#rl-touch-controls {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 600;
+    opacity: 0;
+    transition: opacity 0.5s var(--rl-ease);
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+#rl-touch-controls.visible { opacity: 1; }
+#rl-touch-controls > * { pointer-events: auto; }
+
+/* Hide all touch UI on devices with a fine pointer (mouse) */
+@media (hover: hover) and (pointer: fine) {
+    #rl-touch-controls { display: none !important; }
+}
+
+/* ── Joystick ─────────────────────────────────────────────────────────── */
+.rl-touch-joystick {
+    position: fixed;
+    bottom: max(24px, env(safe-area-inset-bottom));
+    left:   max(20px, env(safe-area-inset-left));
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    touch-action: none;
+}
+
+.rl-touch-joystick-ring {
+    position: absolute;
+    inset: 12px;
+    border: 2px solid rgba(255, 255, 255, 0.35);
+    border-radius: 50%;
+    background: rgba(8, 8, 15, 0.5);
+    -webkit-backdrop-filter: blur(6px);
+            backdrop-filter: blur(6px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+}
+
+.rl-touch-joystick-cursor {
+    position: absolute;
+    top:  50%;
+    left: 50%;
+    width:  56px;
+    height: 56px;
+    margin: -28px 0 0 -28px;
+    border: 2px solid var(--rl-redline);
+    border-radius: 50%;
+    background: rgba(255, 46, 77, 0.20);
+    box-shadow: 0 0 14px rgba(255, 46, 77, 0.45);
+    transition: transform 0.04s linear;
+    pointer-events: none;
+}
+
+/* ── Action buttons (right thumb) ─────────────────────────────────────── */
+.rl-touch-btn {
+    position: fixed;
+    right: max(20px, env(safe-area-inset-right));
+    width:  72px;
+    height: 72px;
+    background: rgba(8, 8, 15, 0.55);
+    -webkit-backdrop-filter: blur(6px);
+            backdrop-filter: blur(6px);
+    border: 2px solid rgba(255, 255, 255, 0.18);
+    border-radius: 14px;
+    color: var(--rl-text);
+    font-family: var(--rl-font-mono);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+
+    cursor: pointer;
+    user-select: none;
+    touch-action: none;
+    -webkit-tap-highlight-color: transparent;
+
+    transition:
+        transform 0.10s var(--rl-ease),
+        background 0.10s var(--rl-ease),
+        border-color 0.10s var(--rl-ease),
+        box-shadow 0.10s var(--rl-ease);
+
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+}
+
+.rl-touch-btn[data-slot="0"] { bottom: max(20px,  env(safe-area-inset-bottom)); }
+.rl-touch-btn[data-slot="1"] { bottom: calc(max(20px, env(safe-area-inset-bottom)) +  82px); }
+.rl-touch-btn[data-slot="2"] { bottom: calc(max(20px, env(safe-area-inset-bottom)) + 164px); }
+.rl-touch-btn[data-slot="3"] { bottom: calc(max(20px, env(safe-area-inset-bottom)) + 246px); }
+
+.rl-touch-btn-icon {
+    font-size: 22px;
+    line-height: 1;
+    color: var(--rl-text);
+}
+
+.rl-touch-btn-label {
+    color: var(--rl-text-2);
+}
+
+/* Active (pressed) state */
+.rl-touch-btn.active {
+    transform: scale(0.92);
+}
+
+/* Per-button accent colors */
+.rl-touch-btn[data-accent="amber"]    { border-color: rgba(255, 182, 39, 0.40); }
+.rl-touch-btn[data-accent="cyan"]     { border-color: rgba(  0, 229, 255, 0.40); }
+.rl-touch-btn[data-accent="redline"]  { border-color: rgba(255,  46,  77, 0.55); }
+
+.rl-touch-btn[data-accent="amber"].active {
+    background: rgba(255, 182, 39, 0.22);
+    border-color: var(--rl-amber);
+    box-shadow: 0 0 18px rgba(255, 182, 39, 0.55);
+}
+.rl-touch-btn[data-accent="cyan"].active {
+    background: rgba(0, 229, 255, 0.22);
+    border-color: var(--rl-cyan);
+    box-shadow: 0 0 18px rgba(0, 229, 255, 0.55);
+}
+.rl-touch-btn[data-accent="redline"].active {
+    background: rgba(255, 46, 77, 0.25);
+    border-color: var(--rl-redline);
+    box-shadow: 0 0 22px rgba(255, 46, 77, 0.65);
+}
+.rl-touch-btn:not([data-accent]).active {
+    background: rgba(255, 255, 255, 0.10);
+    border-color: rgba(255, 255, 255, 0.55);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   MOBILE HUD REFLOW — applies under 768px viewport width
+   ───────────────────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+
+    /* Race HUD (top center) — compact */
+    #race-hud {
+        padding: 6px 14px 8px !important;
+        min-width: 0 !important;
+        font-size: 11px;
+    }
+    #hud-time { font-size: 22px !important; letter-spacing: 1px !important; }
+    #hud-lap  { font-size: 9px  !important; letter-spacing: 2px !important; }
+    #hud-best { font-size: 9px  !important; }
+    #hud-delta { font-size: 11px !important; }
+
+    /* Connection pill — slightly shrunk */
+    .rl-conn-status {
+        font-size: 10px;
+        padding: 4px 10px 4px 8px;
+        letter-spacing: 0.15em;
+    }
+
+    /* HP bar (combat) — top-left, compact, never overlaps joystick at the bottom */
+    #hp-container {
+        left: 12px !important;
+        top: 12px !important;
+        bottom: auto !important;
+    }
+    #hp-bar-wrap { width: 130px !important; height: 6px !important; }
+    #hp-label    { font-size: 8px !important; letter-spacing: 2px !important; }
+    #hp-val      { font-size: 10px !important; }
+
+    /* Weapon ammo — moved from bottom-center (touched by buttons) to top */
+    #weapon-status {
+        bottom: auto !important;
+        top: 56px !important;
+        left: 12px !important;
+        transform: none !important;
+        font-size: 11px !important;
+        padding: 4px 10px !important;
+        letter-spacing: 1.5px !important;
+    }
+
+    /* Kill counter — keep top center but smaller */
+    #kill-counter {
+        font-size: 10px !important;
+        padding: 5px 10px !important;
+        gap: 8px !important;
+    }
+    #kill-counter .kc-val { font-size: 14px !important; }
+
+    /* Minimap — shrink and tuck to top-right under the conn pill */
+    #mp-minimap {
+        width: 120px !important;
+        height: 120px !important;
+        top: 56px !important;
+        left: auto !important;
+        right: 12px !important;
+    }
+
+    /* Sector timing sidebar — too noisy on small screens */
+    #sector-timing { display: none !important; }
+
+    /* Speed + gear indicators — touch buttons cover that area */
+    #hud-speed,
+    #hud-gear { display: none !important; }
+
+    /* Online count badge is redundant with the conn-status pill */
+    #mp-hud { display: none !important; }
+
+    /* Mute button — corner icon, out of joystick + chat reach */
+    #btn-mute {
+        bottom: auto !important;
+        left:   auto !important;
+        top:    12px !important;
+        right:  56px !important;
+        width:  32px !important;
+        height: 32px !important;
+        font-size: 14px !important;
+    }
+
+    /* Chat toggle — top-left */
+    #chat-toggle {
+        bottom: auto !important;
+        right:  auto !important;
+        top:    12px !important;
+        left:   12px !important;
+        width:  32px !important;
+        height: 32px !important;
+        font-size: 14px !important;
+    }
+
+    /* Chat panel — full-width sheet at top instead of bottom-right popup */
+    #chat-panel {
+        bottom: auto !important;
+        top:    52px !important;
+        right:  10px !important;
+        left:   10px !important;
+        width:  auto !important;
+        max-height: 280px !important;
+    }
+
+    /* Lap-finish summary card */
+    #lap-summary {
+        min-width: 0 !important;
+        padding: 12px 16px 14px !important;
+    }
+    .ls-val { font-size: 13px !important; }
+}
+
+/* Ultra-narrow phones (<420px): squeeze the touch joystick + button stack */
+@media (max-width: 420px) {
+    .rl-touch-joystick { width: 130px; height: 130px; }
+    .rl-touch-btn      { width: 64px;  height: 64px; }
+    .rl-touch-btn[data-slot="1"] { bottom: calc(max(16px, env(safe-area-inset-bottom)) +  74px); }
+    .rl-touch-btn[data-slot="2"] { bottom: calc(max(16px, env(safe-area-inset-bottom)) + 148px); }
+    .rl-touch-btn[data-slot="3"] { bottom: calc(max(16px, env(safe-area-inset-bottom)) + 222px); }
+    .rl-touch-btn-icon  { font-size: 19px; }
+    .rl-touch-btn-label { font-size: 9px; }
+}

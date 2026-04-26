@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <title>REDLINE — Race clean. Or wreck everything.</title>
     <meta name="description" content="REDLINE — multiplayer 3D arcade racer with vehicular combat. Built with Three.js, Cannon.js and Socket.IO." />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#FF2E4D">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -745,6 +747,266 @@
         .st-time  { flex: 1; letter-spacing: 0.5px; }
         .st-delta { font-size: 10px; min-width: 52px; text-align: right; }
 
+        /* Make every interactive control comfortable on touch */
+        button, .lobby-btn, .car-option, .color-swatch, .mode-btn, #chat-toggle, #btn-mute, #rc-again {
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* ─────────────────────────────────────────────────────────────────
+           RESPONSIVE — Tablet (≤ 900px)
+           ───────────────────────────────────────────────────────────────── */
+        @media (max-width: 900px) {
+            /* Race HUD: a bit narrower */
+            #race-hud {
+                top: max(12px, env(safe-area-inset-top));
+                padding: 8px 18px 10px;
+                min-width: 180px;
+            }
+            #hud-time { font-size: 26px; }
+
+            /* Speed/gear: smaller and pulled in from screen edge */
+            #hud-speed {
+                bottom: max(20px, env(safe-area-inset-bottom));
+                right: max(20px, env(safe-area-inset-right));
+                font-size: 24px;
+            }
+            #hud-gear {
+                bottom: calc(max(20px, env(safe-area-inset-bottom)) + 32px);
+                right: max(20px, env(safe-area-inset-right));
+            }
+
+            /* Minimap shrinks */
+            #mp-minimap {
+                width: 140px !important;
+                height: 140px !important;
+                top: max(12px, env(safe-area-inset-top)) !important;
+                left: max(12px, env(safe-area-inset-left)) !important;
+            }
+
+            /* Sector timing tucks under the smaller minimap */
+            #sector-timing {
+                top: calc(max(12px, env(safe-area-inset-top)) + 152px);
+                left: max(12px, env(safe-area-inset-left));
+                min-width: 152px;
+                font-size: 10px;
+                padding: 6px 10px;
+            }
+
+            /* Online HUD is redundant with the conn pill — hide it on small screens */
+            #mp-hud { display: none !important; }
+        }
+
+        /* ─────────────────────────────────────────────────────────────────
+           RESPONSIVE — Phone (≤ 600px)
+           ───────────────────────────────────────────────────────────────── */
+        @media (max-width: 600px) {
+            /* Lobby card: full-bleed on phones, comfortable padding */
+            .lobby-card {
+                width: 100% !important;
+                max-width: 100% !important;
+                padding: 24px 20px !important;
+                border-radius: 12px !important;
+            }
+            #lobby {
+                padding: 16px;
+                padding-top: max(16px, env(safe-area-inset-top));
+                padding-bottom: max(16px, env(safe-area-inset-bottom));
+            }
+            .lobby-title { font-size: 22px !important; }
+            .lobby-input { font-size: 16px !important; padding: 12px !important; }
+            .color-grid { grid-template-columns: repeat(4, 1fr) !important; gap: 8px !important; }
+            .car-option { padding: 16px 8px 12px !important; }
+            .car-option .car-icon { font-size: 32px !important; }
+            .lobby-btn {
+                padding: 14px !important;
+                font-size: 14px !important;
+                min-height: 48px;
+            }
+
+            /* Race HUD: compact, sits in safe area */
+            #race-hud {
+                top: max(8px, env(safe-area-inset-top));
+                padding: 6px 14px 8px;
+                min-width: 0;
+                width: auto;
+                max-width: calc(100vw - 32px);
+            }
+            #hud-lap   { font-size: 9px; letter-spacing: 2px; }
+            #hud-time  { font-size: 22px; letter-spacing: 1px; }
+            #hud-best  { font-size: 9px; }
+            #hud-delta { font-size: 11px; min-height: 14px; }
+
+            /* Speed: smaller, lifted above gesture areas */
+            #hud-speed {
+                font-size: 20px;
+                bottom: max(16px, env(safe-area-inset-bottom));
+                right: max(14px, env(safe-area-inset-right));
+            }
+            #hud-speed::after { font-size: 9px; }
+            #hud-gear {
+                font-size: 11px;
+                bottom: calc(max(16px, env(safe-area-inset-bottom)) + 26px);
+                right: max(14px, env(safe-area-inset-right));
+            }
+
+            /* Minimap: phone-sized (still visible) */
+            #mp-minimap {
+                width: 110px !important;
+                height: 110px !important;
+                top: max(8px, env(safe-area-inset-top)) !important;
+                left: max(8px, env(safe-area-inset-left)) !important;
+            }
+
+            /* Sector timing: stacked under the smaller minimap, condensed */
+            #sector-timing {
+                top: calc(max(8px, env(safe-area-inset-top)) + 118px);
+                left: max(8px, env(safe-area-inset-left));
+                min-width: 132px;
+                font-size: 10px;
+                padding: 5px 9px;
+            }
+            .st-label { font-size: 8px; width: 16px; }
+            .st-delta { font-size: 9px; min-width: 44px; }
+
+            /* Leaderboard: narrower and pinned closer to the edge */
+            #leaderboard {
+                left: 8px !important;
+                padding: 10px 12px !important;
+                min-width: 0 !important;
+                width: 160px;
+                max-width: 60vw;
+            }
+            #leaderboard #lb-list li { font-size: 11px; gap: 10px; }
+
+            /* Lap-summary card: scales to width */
+            #lap-summary {
+                min-width: 0 !important;
+                width: calc(100vw - 32px);
+                max-width: 360px;
+                padding: 14px 18px 16px !important;
+            }
+            .ls-row { padding: 4px 0; }
+            .ls-val { font-size: 13px; }
+            .ls-total .ls-val  { font-size: 18px; }
+            .ls-delta { font-size: 11px; min-width: 56px; }
+
+            /* Race-complete overlay: scales to width */
+            #race-complete .rc-inner {
+                min-width: 0 !important;
+                width: calc(100vw - 32px);
+                max-width: 360px;
+                padding: 24px 20px !important;
+            }
+            .rc-trophy { font-size: 38px; }
+            .rc-title  { font-size: 16px; letter-spacing: 3px; }
+            .rc-sub    { font-size: 11px; }
+            #rc-again  {
+                width: 100%;
+                padding: 14px !important;
+                font-size: 14px !important;
+                min-height: 48px;
+            }
+
+            /* Death overlay: smaller text */
+            #death-title { font-size: 30px; letter-spacing: 3px; }
+            #death-sub   { font-size: 12px; letter-spacing: 2px; }
+
+            /* Wrong-way: smaller */
+            #wrong-way { font-size: 22px; }
+
+            /* Start lights: scale down on phones */
+            #start-lights-overlay {
+                top: calc(max(8px, env(safe-area-inset-top)) + 56px);
+            }
+            #start-lights-bar { gap: 6px; padding: 10px 12px; border-radius: 12px; }
+            .sl-pod { width: 32px; height: 32px; }
+
+            /* HP bar: lifted clear of the chat button on phones */
+            #hp-container {
+                left: max(8px, env(safe-area-inset-left));
+                bottom: 96px;
+            }
+            #hp-bar-wrap { width: 130px; }
+
+            /* Weapon status: doesn't crash into HP/chat */
+            #weapon-status {
+                bottom: calc(max(16px, env(safe-area-inset-bottom)) + 56px);
+                font-size: 11px;
+                padding: 5px 14px;
+            }
+
+            /* Chat: stays in safe area, tighter */
+            #chat-toggle {
+                width: 42px !important;
+                height: 42px !important;
+                bottom: max(14px, env(safe-area-inset-bottom)) !important;
+                right: max(14px, env(safe-area-inset-right)) !important;
+            }
+            #chat-badge {
+                bottom: calc(max(14px, env(safe-area-inset-bottom)) + 32px) !important;
+                right: calc(max(14px, env(safe-area-inset-right)) + 4px) !important;
+            }
+            #chat-panel {
+                width: calc(100vw - 16px) !important;
+                max-width: 320px;
+                right: max(8px, env(safe-area-inset-right)) !important;
+                bottom: calc(max(14px, env(safe-area-inset-bottom)) + 56px) !important;
+                max-height: 60dvh !important;
+            }
+            #chat-messages { font-size: 12px; }
+            #chat-input    { font-size: 14px !important; padding: 8px 12px !important; }
+
+            /* Mute button: out of the way */
+            #btn-mute {
+                left: max(12px, env(safe-area-inset-left));
+                bottom: calc(max(14px, env(safe-area-inset-bottom)) + 56px);
+                width: 38px;
+                height: 38px;
+            }
+
+            /* Toast: respect safe area */
+            #mp-toast {
+                bottom: max(14px, env(safe-area-inset-bottom)) !important;
+                left: 50% !important;
+                transform: translateX(-50%) !important;
+                max-width: calc(100vw - 32px);
+            }
+
+            /* Connection pill: smaller text on phones */
+            .rl-conn-status {
+                font-size: 10px !important;
+                padding: 5px 10px 5px 9px !important;
+                letter-spacing: 0.15em !important;
+            }
+
+            /* Kill counter: smaller padding */
+            #kill-counter {
+                top: max(8px, env(safe-area-inset-top)) !important;
+                font-size: 12px !important;
+                padding: 6px 12px !important;
+            }
+            #kill-counter .kc-val { font-size: 16px !important; }
+        }
+
+        /* ─────────────────────────────────────────────────────────────────
+           RESPONSIVE — Short screens / mobile landscape (≤ 480px high)
+           Race HUD, minimap, sector timing must coexist horizontally.
+           ───────────────────────────────────────────────────────────────── */
+        @media (max-height: 480px) and (orientation: landscape) {
+            #race-hud   { padding: 4px 12px 6px; min-width: 160px; }
+            #hud-time   { font-size: 20px; }
+            #mp-minimap { width: 96px !important; height: 96px !important; }
+            #sector-timing {
+                top: max(8px, env(safe-area-inset-top));
+                left: 116px;
+                min-width: 0;
+            }
+            #lap-summary { padding: 10px 14px 12px !important; }
+            #hp-container { bottom: 56px; }
+            #weapon-status { bottom: calc(max(8px, env(safe-area-inset-bottom)) + 36px); }
+        }
+
     </style>
 </head>
 <body>
@@ -994,36 +1256,6 @@
         display: none;
         z-index: 500;
     ">1 online</div>
-
-    <!-- HUD: connection / ping -->
-    <div id="mp-ping" style="
-        position: fixed;
-        top: 44px;
-        right: 16px;
-        background: rgba(0,0,0,0.4);
-        color: rgba(255,255,255,0.55);
-        font-family: monospace;
-        font-size: 10px;
-        letter-spacing: 0.5px;
-        padding: 3px 9px;
-        border-radius: 4px;
-        display: none;
-        align-items: center;
-        gap: 6px;
-        z-index: 500;
-        pointer-events: none;
-        user-select: none;
-    ">
-        <span id="mp-ping-dot" style="
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background: #888;
-            box-shadow: 0 0 6px rgba(255,255,255,0.15);
-            transition: background 0.3s, box-shadow 0.3s;
-        "></span>
-        <span id="mp-ping-val">-- ms</span>
-    </div>
 
     <!-- Chat toggle button -->
     <button id="chat-toggle" style="

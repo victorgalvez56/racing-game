@@ -1054,8 +1054,8 @@
 /* ── Connection status pill ────────────────────────────────────────────── */
 .rl-conn-status {
     position: fixed;
-    top: var(--rl-4);
-    right: var(--rl-4);
+    top: max(var(--rl-4), env(safe-area-inset-top));
+    right: max(var(--rl-4), env(safe-area-inset-right));
     z-index: 1900;
     display: flex;
     align-items: center;
@@ -1135,4 +1135,69 @@
 #kill-counter .kc-target {
     font-size: 12px;
     color: var(--rl-text-dim);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   RESPONSIVE — Entry flow (title / menu / onboarding / loading)
+   ───────────────────────────────────────────────────────────────────────── */
+@media (max-width: 720px) {
+    /* Title screen: tighter padding, smaller mode pills */
+    #redline-title {
+        padding: var(--rl-6) var(--rl-4);
+    }
+    .rl-tagline    { margin-top: var(--rl-4); }
+    .rl-mode-pills { margin-top: var(--rl-6); gap: var(--rl-2); flex-wrap: wrap; justify-content: center; font-size: 10px; }
+    .rl-pill       { padding: 5px 10px; }
+    .rl-prompt     { bottom: max(var(--rl-8), env(safe-area-inset-bottom)); font-size: 11px; }
+    .rl-version    { top: max(var(--rl-4), env(safe-area-inset-top)); right: max(var(--rl-4), env(safe-area-inset-right)); }
+    .rl-slash      { width: 60vw; }
+
+    /* Menu: header collapses, hero shrinks, footer respects safe area */
+    #redline-menu        { padding: var(--rl-12) var(--rl-4) var(--rl-8); }
+    .rl-menu-header      { top: max(var(--rl-4), env(safe-area-inset-top)); left: max(var(--rl-4), env(safe-area-inset-left)); }
+    .rl-logo             { font-size: 18px; }
+    .rl-hero             { margin-bottom: var(--rl-8); }
+    .rl-card             { padding: var(--rl-4); gap: var(--rl-3); }
+    .rl-card-icon        { width: 44px; height: 44px; font-size: 24px; }
+    .rl-card-name        { font-size: 24px; }
+    .rl-card-desc        { font-size: 13px; line-height: 1.45; }
+    .rl-card-stats       { font-size: 10px; padding-top: var(--rl-2); }
+    .rl-menu-footer      { bottom: max(var(--rl-4), env(safe-area-inset-bottom)); font-size: 10px; gap: var(--rl-3); }
+
+    /* Onboarding card: tighter padding, full-width buttons */
+    .rl-ob-card { padding: var(--rl-6) var(--rl-4); width: min(100%, 92vw); }
+    .rl-ob-icon { width: 36px; height: 36px; font-size: 20px; }
+    .rl-ob-title { font-size: 22px; }
+    .rl-ob-text  { font-size: 13px; line-height: 1.5; }
+    .rl-ob-cta   { flex-direction: column; gap: var(--rl-2); }
+    .rl-ob-btn   { padding: 14px var(--rl-4); min-height: 48px; }
+    .rl-ob-back  { top: var(--rl-3); right: var(--rl-3); }
+
+    /* Loading screen: fits a phone */
+    #loading-content { width: min(360px, calc(100vw - 32px)); }
+    #loading-title   { font-size: 28px !important; }
+    #loading-subtitle { font-size: 10px; margin-bottom: 24px; }
+}
+
+/* ── Phone portrait: lock mode pills to a single column for legibility ── */
+@media (max-width: 420px) {
+    .rl-mode-pills { font-size: 10px; }
+    .rl-mode-pills .rl-pill-divider { display: none; }
+    .rl-card-name  { font-size: 22px; }
+    .rl-card-desc  { font-size: 12px; }
+    .rl-tagline    { font-size: 14px; padding: 0 var(--rl-4); }
+}
+
+/* ── Mobile landscape: shrink the title screen vertically ── */
+@media (max-height: 480px) and (orientation: landscape) {
+    #redline-title { padding: var(--rl-4); }
+    .rl-wordmark   { font-size: clamp(48px, 9vw, 88px); }
+    .rl-tagline    { margin-top: var(--rl-2); }
+    .rl-mode-pills { margin-top: var(--rl-3); }
+    .rl-prompt     { bottom: var(--rl-3); }
+    #redline-menu  { padding: var(--rl-6) var(--rl-4); }
+    .rl-hero       { margin-bottom: var(--rl-4); }
+    .rl-cards      { gap: var(--rl-3); }
+    .rl-card       { padding: var(--rl-3); gap: var(--rl-2); }
+    .rl-card-desc  { display: none; }
 }

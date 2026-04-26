@@ -3,9 +3,9 @@ import { Composition } from 'remotion'
 import { Trailer, TrailerProps } from './Trailer'
 
 const FPS               = 30
-const INTRO_FRAMES      = 3 * FPS    // 3.0s
-const GAMEPLAY_FRAMES   = 20 * FPS   // 20.0s
-const OUTRO_FRAMES      = 5 * FPS    // 5.0s
+const INTRO_FRAMES      = 3 * FPS              // 3.0s
+const GAMEPLAY_FRAMES   = Math.round(9.3 * FPS) // 9.3s — matches XD.mov
+const OUTRO_FRAMES      = 5 * FPS              // 5.0s
 const TOTAL_FRAMES      = INTRO_FRAMES + GAMEPLAY_FRAMES + OUTRO_FRAMES
 
 export const RemotionRoot: React.FC = () =>

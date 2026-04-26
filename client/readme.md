@@ -1,17 +1,9 @@
-# Folio 2019
+# REDLINE — client
 
-## Setup
-Download [Node.js](https://nodejs.org/en/download/).
-Run this followed commands:
+Vite + Three.js front-end. See the [root README](../README.md) for setup, scripts and project structure.
 
-``` bash
-# Install dependencies
+```bash
 npm install
-
-# Serve at localhost:1234
-npm run dev
-
-# Build for production in the dist/ directory
-npm run build
+npm run dev     # Vite dev server (proxies /socket.io to localhost:3001)
+npm run build   # Builds to ../dist/
 ```
-

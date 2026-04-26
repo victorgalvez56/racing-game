@@ -1,7 +1,10 @@
 {
-  "name": "bruno-simon-folio-2019",
-  "version": "0.0.0",
+  "name": "redline-client",
+  "version": "0.1.0",
+  "private": true,
   "type": "module",
+  "description": "REDLINE client — Vite + Three.js + Cannon.js front-end for the racer/combat game.",
+  "license": "MIT",
   "scripts": {
     "dev": "vite",
     "build": "vite build"

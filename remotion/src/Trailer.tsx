@@ -1,6 +1,7 @@
 import React from 'react'
 import {
     AbsoluteFill,
+    Audio,
     Sequence,
     useCurrentFrame,
     useVideoConfig,
@@ -44,6 +45,9 @@ export const Trailer: React.FC<TrailerProps> = ({
 {
     return (
         <AbsoluteFill style={{ backgroundColor: COLORS.bgDeep }}>
+            {/* Background music spans the entire trailer */}
+            <Audio src={staticFile('music.mp3')} volume={0.65} />
+
             <Sequence durationInFrames={introFrames}>
                 <IntroScene />
             </Sequence>
@@ -136,25 +140,122 @@ const IntroScene: React.FC = () =>
 }
 
 // ──────────────────────────────────────────────────────────────────────────
-// Gameplay: the user's screen recording with corner overlays
+// Gameplay: the user's screen recording with corner overlays + FX layers
 // ──────────────────────────────────────────────────────────────────────────
 const GameplayScene: React.FC<{ gameplayPath: string; duration: number }> = ({
     gameplayPath, duration,
 }) =>
 {
     const frame = useCurrentFrame()
+
+    // Fades into and out of the section
     const fadeIn  = interpolate(frame, [0, 18], [0, 1], { extrapolateRight: 'clamp' })
     const fadeOut = interpolate(frame, [duration - 18, duration], [1, 0], { extrapolateLeft: 'clamp' })
     const opacity = Math.min(fadeIn, fadeOut)
 
+    // Ken Burns — slow zoom for dynamism
+    const zoom = interpolate(frame, [0, duration], [1.02, 1.10])
+
+    // Periodic 3-frame RGB glitch every 2 seconds (skipping the first 30 frames)
+    const glitchActive = frame > 30 && (frame % 60) < 3
+
+    // Scanning bar that sweeps top → bottom every 3 seconds
+    const scanProgress = ((frame + 10) % 90) / 90    // 0 → 1
+    const scanY        = scanProgress * 100
+
+    // REC indicator pulses on a fast sine
+    const recPulse = (Math.sin(frame * 0.18) + 1) * 0.5
+
+    // Timestamp bottom-left like a security cam
+    const seconds = Math.floor(frame / 30)
+    const cs      = Math.floor((frame % 30) * 100 / 30)
+    const tsLabel = `00:${String(seconds).padStart(2, '0')}.${String(cs).padStart(2, '0')}`
+
     return (
         <AbsoluteFill style={{ opacity, backgroundColor: COLORS.bgDeep }}>
-            <Video
-                src={staticFile(gameplayPath)}
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-            />
+            {/* Synthwave backdrop visible in the letterbox bars */}
+            <SynthwaveGrid intensity={0.55} />
 
-            {/* Corner branding while gameplay plays */}
+            {/* Video with color grading + Ken Burns */}
+            <div style={{
+                position: 'absolute',
+                inset: 0,
+                transform: `scale(${zoom})`,
+                transformOrigin: 'center center',
+            }}>
+                <Video
+                    src={staticFile(gameplayPath)}
+                    muted
+                    style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'contain',
+                        filter: [
+                            'saturate(1.30)',
+                            'contrast(1.14)',
+                            'brightness(0.97)',
+                            'drop-shadow(0 0 80px rgba(255, 46, 77, 0.45))',
+                        ].join(' '),
+                    }}
+                />
+            </div>
+
+            {/* Glitch flicker — full-screen RGB tint bursts */}
+            {glitchActive && (
+                <>
+                    <div style={{
+                        position: 'absolute', inset: 0,
+                        background: 'rgba(255, 46, 77, 0.18)',
+                        mixBlendMode: 'screen',
+                        pointerEvents: 'none',
+                    }} />
+                    <div style={{
+                        position: 'absolute', inset: 0,
+                        background: 'rgba(0, 229, 255, 0.10)',
+                        mixBlendMode: 'screen',
+                        transform: 'translate(-3px, 0)',
+                        pointerEvents: 'none',
+                    }} />
+                </>
+            )}
+
+            {/* Scanning light bar sweeping top → bottom */}
+            <div style={{
+                position: 'absolute',
+                left: 0, right: 0,
+                top: `${scanY}%`,
+                height: 90,
+                background: 'linear-gradient(180deg, transparent 0%, rgba(255, 46, 77, 0.35) 50%, transparent 100%)',
+                mixBlendMode: 'screen',
+                pointerEvents: 'none',
+                opacity: 0.7,
+            }} />
+
+            {/* Vignette */}
+            <div style={{
+                position: 'absolute', inset: 0,
+                background: 'radial-gradient(ellipse at center, transparent 35%, rgba(0,0,0,0.55) 100%)',
+                pointerEvents: 'none',
+            }} />
+
+            {/* Scanlines (very subtle) */}
+            <div style={{
+                position: 'absolute', inset: 0,
+                background: 'repeating-linear-gradient(0deg, transparent 0, transparent 2px, rgba(0,0,0,0.06) 2px, rgba(0,0,0,0.06) 3px)',
+                pointerEvents: 'none',
+                opacity: 0.7,
+            }} />
+
+            {/* Bottom red accent line for HUD feel */}
+            <div style={{
+                position: 'absolute',
+                bottom: 0, left: 0, right: 0,
+                height: 3,
+                background: `linear-gradient(90deg, transparent, ${COLORS.redline} 50%, transparent)`,
+                boxShadow: `0 0 18px ${COLORS.redline}`,
+            }} />
+
+            {/* Top-left wordmark */}
             <div style={{
                 position: 'absolute',
                 top: 36, left: 36,
@@ -168,6 +269,7 @@ const GameplayScene: React.FC<{ gameplayPath: string; duration: number }> = ({
                 RED<span style={{ color: COLORS.redline }}>LINE</span>
             </div>
 
+            {/* Top-right pulsing REC */}
             <div style={{
                 position: 'absolute',
                 top: 40, right: 36,
@@ -175,10 +277,49 @@ const GameplayScene: React.FC<{ gameplayPath: string; duration: number }> = ({
                 fontSize: 18,
                 letterSpacing: '0.2em',
                 color: COLORS.text2,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
                 textShadow: '0 2px 12px rgba(0,0,0,0.6)',
             }}>
-                <span style={{ color: COLORS.redline, marginRight: 8 }}>●</span>
-                LIVE GAMEPLAY
+                <span style={{
+                    width: 10, height: 10,
+                    borderRadius: '50%',
+                    background: COLORS.redline,
+                    opacity: 0.55 + recPulse * 0.45,
+                    boxShadow: `0 0 ${10 + recPulse * 12}px ${COLORS.redline}`,
+                }} />
+                REC
+            </div>
+
+            {/* Bottom-left timestamp */}
+            <div style={{
+                position: 'absolute',
+                bottom: 36, left: 36,
+                fontFamily: JETBRAINS,
+                fontSize: 16,
+                color: COLORS.text2,
+                letterSpacing: '0.25em',
+                textShadow: '0 2px 12px rgba(0,0,0,0.7)',
+            }}>
+                COMBAT · {tsLabel}
+            </div>
+
+            {/* Bottom-right mode tag */}
+            <div style={{
+                position: 'absolute',
+                bottom: 36, right: 36,
+                fontFamily: JETBRAINS,
+                fontSize: 14,
+                fontWeight: 500,
+                color: COLORS.redline,
+                letterSpacing: '0.3em',
+                padding: '6px 14px',
+                border: `1px solid ${COLORS.redline}80`,
+                borderRadius: 4,
+                textShadow: '0 2px 12px rgba(0,0,0,0.7)',
+            }}>
+                MODE 02
             </div>
         </AbsoluteFill>
     )

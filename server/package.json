@@ -1,7 +1,10 @@
 {
-  "name": "folio-multiplayer-server",
-  "version": "0.0.0",
+  "name": "redline-server",
+  "version": "0.1.0",
+  "private": true,
   "type": "module",
+  "description": "REDLINE server — Socket.IO authoritative game server. Routes inputs, broadcasts world snapshots, schedules meteor showers, relays combat events.",
+  "license": "MIT",
   "scripts": {
     "dev": "nodemon src/index.js",
     "start": "node src/index.js"

@@ -1,12 +1,22 @@
 {
-  "name": "folio-bruno-multiplayer",
-  "version": "0.0.0",
+  "name": "redline",
+  "version": "0.1.0",
+  "private": true,
   "type": "module",
+  "description": "REDLINE — multiplayer 3D arcade racer with vehicular combat. Three.js + Cannon.js + Socket.IO.",
+  "homepage": "https://redline.victorgalvez.dev",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/victorgalvez56/racing-game.git"
+  },
+  "license": "MIT",
+  "author": "Victor Galvez <hello@victorgalvez.dev>",
   "scripts": {
     "dev": "concurrently --names \"client,server\" --prefix-colors \"cyan,yellow\" \"npm run dev --prefix client\" \"cd server && node src/index.js\"",
     "build": "npm run build --prefix client",
     "server": "npm run dev --prefix server",
-    "client": "npm run dev --prefix client"
+    "client": "npm run dev --prefix client",
+    "trailer": "npm run render --prefix remotion"
   },
   "devDependencies": {
     "concurrently": "^8.2.2",

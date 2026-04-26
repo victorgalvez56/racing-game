@@ -20,7 +20,7 @@ const TRACK_PICKUPS = [
 // Pickup positions inside the combat arena (100×100 with skatepark features).
 // Pickups on elevated surfaces have explicit z baselines so they float above
 // the obstacle, not the floor.
-const ARENA_PICKUPS = [
+export const ARENA_PICKUPS = [
     // Plateau apex — highest-value health, requires climbing a ramp
     { x:   0, y:   0, z: 2.5,  type: 'health', value: 50 },
 

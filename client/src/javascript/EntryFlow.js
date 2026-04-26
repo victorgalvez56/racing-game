@@ -19,15 +19,6 @@ const MODE_DATA = {
         controls:   '<kbd>WASD</kbd> drive · <kbd>SHIFT</kbd> boost · <kbd>X</kbd> brake · <kbd>SPACE</kbd> jump · <kbd>F</kbd> fire · <kbd>R</kbd> respawn',
         tips:       'Grab orange ammo crates and green health spheres. Missiles home toward enemies — don\'t waste them on walls.',
     },
-    arcade: {
-        num:        '03',
-        name:       'ARCADE',
-        icon:       '🎮',
-        accent:     'var(--rl-amber)',
-        objective:  'Race <em>5 laps</em> with <em>weapons hot</em>. No rules — just chaos.',
-        controls:   '<kbd>WASD</kbd> drive · <kbd>SHIFT</kbd> boost · <kbd>X</kbd> brake · <kbd>SPACE</kbd> jump · <kbd>F</kbd> fire · <kbd>R</kbd> respawn',
-        tips:       'Best of both worlds. Watch your six on the straights. Boost pads can save you from a missile.',
-    },
 }
 
 export default class EntryFlow

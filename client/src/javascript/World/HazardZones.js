@@ -74,6 +74,14 @@ export default class HazardZones
         this._addBoost( 38,  0, 4)
     }
 
+    // Lightweight summary for the minimap (no THREE.js objects, just data)
+    getMinimapZones()
+    {
+        return this._zones.map(z => ({
+            x: z.x, y: z.y, radius: Math.sqrt(z.radiusSq), type: z.type,
+        }))
+    }
+
     // ── Healing zone (green ring + filled disc + plus icon) ────────────────
     _addHealing(x, y, radius)
     {

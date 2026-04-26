@@ -24,6 +24,8 @@ import Weapons from './Weapons.js'
 import HealthSystem from './HealthSystem.js'
 import CombatPickups from './CombatPickups.js'
 import HazardZones from './HazardZones.js'
+import ArenaMinimap from './ArenaMinimap.js'
+import { ARENA_PICKUPS } from './CombatPickups.js'
 
 export default class World
 {
@@ -75,25 +77,19 @@ export default class World
     {
         window.setTimeout(() => { this.camera.pan.enable() }, 2000)
 
-        // Mode flags
-        const mode  = this.config.gameMode || 'arcade'
-        const race  = mode === 'race'   || mode === 'arcade'
-        const combat = mode === 'combat' || mode === 'arcade'
+        // Mode flags — only 'race' and 'combat' supported
+        const mode   = this.config.gameMode || 'race'
+        const race   = mode === 'race'
+        const combat = mode === 'combat'
 
         this.setReveal()
         this.setMaterials()
         this.setShadows()
         this.setPhysics()
 
-        // Race / Arcade use the racetrack; pure Combat uses a separate arena
-        if(combat && !race)
-        {
-            this.setArena()
-        }
-        else
-        {
-            this.setTrack()
-        }
+        // Race uses the racetrack; Combat uses the dedicated arena
+        if(combat) this.setArena()
+        else       this.setTrack()
 
         if(this.network) this._setupSnapshotSender()
         if(this.network) this._setupBumpHandling()
@@ -102,7 +98,8 @@ export default class World
         this.areas.car = this.car
         this._setupYouLabel()
 
-        // Minimap shows the racetrack outline — hide for pure combat
+        // Race uses the camera-following racetrack minimap;
+        // Combat gets a fixed-view arena minimap (created later in setCombat)
         if(race) this.setMinimap()
 
         if(race)
@@ -765,7 +762,7 @@ export default class World
         this.combatPickups = new CombatPickups({
             scene:   this.scene,
             physics: this.physics,
-            layout:  (this.config.gameMode === 'combat') ? 'arena' : 'track',
+            layout:  (this.config.gameMode === 'combat') ? 'arena' : 'track',   // combat = arena pickups; race never gets here
             onCollect: ({ type, value }) =>
             {
                 if(type === 'ammo')
@@ -847,14 +844,23 @@ export default class World
         this._updateCombatHUD()
 
         // ── Hazard zones (boost + healing) — only meaningful inside the arena ──
-        if(this.config.gameMode === 'combat')
-        {
-            this.hazardZones = new HazardZones({
-                scene:        this.scene,
-                physics:      this.physics,
-                healthSystem: this.healthSystem,
-            })
-        }
+        this.hazardZones = new HazardZones({
+            scene:        this.scene,
+            physics:      this.physics,
+            healthSystem: this.healthSystem,
+        })
+
+        // ── Arena minimap (fixed top-down view) ──
+        const $map = document.getElementById('mp-minimap')
+        if($map) $map.style.display = 'block'
+
+        this.arenaMinimap = new ArenaMinimap({
+            physics:          this.physics,
+            remoteCarManager: this.remoteCarManager,
+            localCarColor:    this.config.carColor ?? 0,
+            pickups:          ARENA_PICKUPS,
+            hazards:          this.hazardZones.getMinimapZones(),
+        })
 
         // ── Tick ──
         this.time.on('tick', () =>
@@ -863,6 +869,7 @@ export default class World
             this.weapons.update(dt)
             this.combatPickups.update(dt)
             this.hazardZones?.update(dt)
+            this.arenaMinimap?.update(dt)
         })
     }
 

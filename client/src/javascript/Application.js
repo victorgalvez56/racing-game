@@ -52,7 +52,7 @@ export default class Application
         this.config.cyberTruck = window.location.hash === '#cybertruck'
         this.config.touch      = false
         this.config.soloMode   = false
-        this.config.gameMode   = 'arcade'   // 'race' | 'combat' | 'arcade'
+        this.config.gameMode   = 'race'    // 'race' | 'combat'
 
         window.addEventListener('touchstart', () =>
         {

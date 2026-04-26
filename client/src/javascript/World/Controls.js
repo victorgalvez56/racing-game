@@ -1,4 +1,7 @@
-import EventEmitter from '../Utils/EventEmitter'
+import mobileTriangle       from '../../images/mobile/triangle.png'
+import mobileDoubleTriangle from '../../images/mobile/doubleTriangle.png'
+import mobileCross          from '../../images/mobile/cross.png'
+import EventEmitter         from '../Utils/EventEmitter'
 
 export default class Controls extends EventEmitter
 {
@@ -315,19 +318,27 @@ export default class Controls extends EventEmitter
         document.addEventListener('touchcancel', releaseJoy)
     }
 
-    // ── Right-thumb action buttons (gas / brake / boost / jump / fire) ──
-    // Text-only labels (no emoji) for a cleaner, intentional look. Each
-    // button is a square pill with the action name in mono uppercase.
+    // ── Right-thumb action buttons ───────────────────────────────────────
+    // Bottom-up: backward · brake · forward · boost (Bruno's original 4)
+    //            + jump · fire (new — text labels)
     _buildTouchButtons()
     {
-        const makeHold = (id, label, slot, onPress, onRelease, accent) =>
+        // Hold-style button with a PNG icon (original aesthetic)
+        const makeIconHold = (id, iconUrl, iconRotate, slot, onPress, onRelease, accent) =>
         {
             const $b = document.createElement('button')
-            $b.className = 'rl-touch-btn'
+            $b.className = 'rl-touch-btn rl-touch-btn-icon'
             $b.id = `rl-touch-${id}`
             $b.dataset.slot = String(slot)
             if(accent) $b.dataset.accent = accent
-            $b.textContent = label
+
+            const $img = document.createElement('img')
+            $img.src = iconUrl
+            $img.alt = id
+            $img.draggable = false
+            if(iconRotate) $img.style.transform = `rotate(${iconRotate}deg)`
+            $b.appendChild($img)
+
             this.touch.$root.appendChild($b)
 
             $b.addEventListener('touchstart', (e) =>
@@ -343,10 +354,11 @@ export default class Controls extends EventEmitter
             return $b
         }
 
-        const makeTap = (id, label, slot, onTap, accent, hidden = false) =>
+        // Tap-style button with a text label (new actions: jump, fire)
+        const makeTextTap = (id, label, slot, onTap, accent, hidden = false) =>
         {
             const $b = document.createElement('button')
-            $b.className = 'rl-touch-btn rl-touch-btn-tap'
+            $b.className = 'rl-touch-btn rl-touch-btn-text'
             $b.id = `rl-touch-${id}`
             $b.dataset.slot = String(slot)
             if(accent) $b.dataset.accent = accent
@@ -364,29 +376,36 @@ export default class Controls extends EventEmitter
             return $b
         }
 
-        // Slot 0 = bottom (most reachable). Stack rises upward.
+        // Slots 0-3: original Bruno layout. Slots 4-5: new actions.
 
-        // GAS — primary forward control (was joystick Y-axis previously)
-        this.touch.gas = makeHold('gas', 'GAS', 0,
-            () => { this.actions.up = true;  this._sendInput() },
-            () => { this.actions.up = false; this._sendInput() },
-            'redline')
+        // Slot 0 (bottom): backward — triangle rotated 180°
+        this.touch.backward = makeIconHold('backward', mobileTriangle, 180, 0,
+            () => { this.actions.down = true;  this.camera?.pan?.reset?.(); this._sendInput() },
+            () => { this.actions.down = false; this._sendInput() })
 
-        this.touch.brake = makeHold('brake', 'BRAKE', 1,
+        // Slot 1: brake — cross
+        this.touch.brake = makeIconHold('brake', mobileCross, 0, 1,
             () => { this.actions.brake = true;  this._sendInput() },
             () => { this.actions.brake = false; this._sendInput() })
 
-        this.touch.boost = makeHold('boost', 'BOOST', 2,
-            () => { this.actions.boost = true;  this._sendInput() },
-            () => { this.actions.boost = false; this._sendInput() },
+        // Slot 2: forward — triangle (gas pedal)
+        this.touch.forward = makeIconHold('forward', mobileTriangle, 0, 2,
+            () => { this.actions.up = true;  this.camera?.pan?.reset?.(); this._sendInput() },
+            () => { this.actions.up = false; this._sendInput() })
+
+        // Slot 3: boost — double triangle
+        this.touch.boost = makeIconHold('boost', mobileDoubleTriangle, 0, 3,
+            () => { this.actions.up = true;  this.actions.boost = true;  this.camera?.pan?.reset?.(); this._sendInput() },
+            () => { this.actions.up = false; this.actions.boost = false; this._sendInput() },
             'amber')
 
-        this.touch.jump = makeTap('jump', 'JUMP', 3,
+        // Slot 4: jump (new) — text label, cyan accent
+        this.touch.jump = makeTextTap('jump', 'JUMP', 4,
             () => this.trigger('action', ['jump']),
             'cyan')
 
-        // Fire — combat-mode-only. World.setCombat calls touch.showFire()
-        this.touch.fire = makeTap('fire', 'FIRE', 4,
+        // Slot 5: fire (new) — text label, redline accent, combat-mode only
+        this.touch.fire = makeTextTap('fire', 'FIRE', 5,
             () => this.trigger('action', ['fire']),
             'redline',
             true)

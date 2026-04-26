@@ -1264,23 +1264,18 @@
     pointer-events: none;
 }
 
-/* ── Action buttons (right thumb) — text-only, mono uppercase ─────────── */
+/* ── Action buttons (right thumb) ─────────────────────────────────────── */
 .rl-touch-btn {
     position: fixed;
-    right: max(18px, env(safe-area-inset-right));
-    width:  72px;
-    height: 60px;
+    right: max(16px, env(safe-area-inset-right));
+    width:  68px;
+    height: 58px;
     background: rgba(8, 8, 15, 0.55);
     -webkit-backdrop-filter: blur(6px);
             backdrop-filter: blur(6px);
     border: 1.5px solid rgba(255, 255, 255, 0.20);
     border-radius: 12px;
     color: var(--rl-text);
-    font-family: var(--rl-font-mono);
-    font-size: 13px;
-    font-weight: 700;
-    letter-spacing: 0.10em;
-    text-align: center;
 
     display: flex;
     align-items: center;
@@ -1300,12 +1295,35 @@
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
 }
 
-/* 5 slots — slot 0 at bottom, stack rises 70px per step */
-.rl-touch-btn[data-slot="0"] { bottom: max(18px,  env(safe-area-inset-bottom)); }
-.rl-touch-btn[data-slot="1"] { bottom: calc(max(18px, env(safe-area-inset-bottom)) +  70px); }
-.rl-touch-btn[data-slot="2"] { bottom: calc(max(18px, env(safe-area-inset-bottom)) + 140px); }
-.rl-touch-btn[data-slot="3"] { bottom: calc(max(18px, env(safe-area-inset-bottom)) + 210px); }
-.rl-touch-btn[data-slot="4"] { bottom: calc(max(18px, env(safe-area-inset-bottom)) + 280px); }
+/* PNG-icon variant (original Bruno layout: forward/backward/brake/boost) */
+.rl-touch-btn-icon img {
+    width:  22px;
+    height: 22px;
+    object-fit: contain;
+    pointer-events: none;
+    /* Force the dark icon white-ish for the dark button bg */
+    filter: brightness(0) invert(1);
+    opacity: 0.85;
+    transition: opacity 0.1s var(--rl-ease);
+}
+.rl-touch-btn-icon.active img { opacity: 1; }
+
+/* Text-label variant (new actions: jump, fire) */
+.rl-touch-btn-text {
+    font-family: var(--rl-font-mono);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.10em;
+    text-align: center;
+}
+
+/* 6 slots — slot 0 at bottom, stack rises 66px per step */
+.rl-touch-btn[data-slot="0"] { bottom: max(16px,  env(safe-area-inset-bottom)); }
+.rl-touch-btn[data-slot="1"] { bottom: calc(max(16px, env(safe-area-inset-bottom)) +  66px); }
+.rl-touch-btn[data-slot="2"] { bottom: calc(max(16px, env(safe-area-inset-bottom)) + 132px); }
+.rl-touch-btn[data-slot="3"] { bottom: calc(max(16px, env(safe-area-inset-bottom)) + 198px); }
+.rl-touch-btn[data-slot="4"] { bottom: calc(max(16px, env(safe-area-inset-bottom)) + 264px); }
+.rl-touch-btn[data-slot="5"] { bottom: calc(max(16px, env(safe-area-inset-bottom)) + 330px); }
 
 /* Active (pressed) state */
 .rl-touch-btn.active {
@@ -1471,41 +1489,44 @@
 
 }
 
-/* Ultra-narrow phones (<420px): tighter joystick + button stack */
+/* Ultra-narrow phones (<420px): tighter joystick + 6-button stack */
 @media (max-width: 420px) {
     .rl-touch-joystick {
-        width: 130px !important;
-        height: 130px !important;
-        bottom: 14px !important;
+        width: 128px !important;
+        height: 128px !important;
+        bottom: 12px !important;
         left: 12px !important;
     }
     .rl-touch-joystick-cursor {
-        width: 48px !important;
-        height: 48px !important;
-        margin: -24px 0 0 -24px !important;
+        width: 46px !important;
+        height: 46px !important;
+        margin: -23px 0 0 -23px !important;
     }
     .rl-touch-btn {
-        width: 64px !important;
-        height: 54px !important;
+        width: 60px !important;
+        height: 50px !important;
         right: 12px !important;
-        font-size: 11px !important;
-        letter-spacing: 0.08em !important;
     }
-    .rl-touch-btn[data-slot="0"] { bottom: 14px  !important; }
-    .rl-touch-btn[data-slot="1"] { bottom: 76px  !important; }
-    .rl-touch-btn[data-slot="2"] { bottom: 138px !important; }
-    .rl-touch-btn[data-slot="3"] { bottom: 200px !important; }
-    .rl-touch-btn[data-slot="4"] { bottom: 262px !important; }
-}
+    .rl-touch-btn-text { font-size: 11px !important; letter-spacing: 0.08em !important; }
+    .rl-touch-btn-icon img { width: 18px !important; height: 18px !important; }
 
-/* Mobile landscape (short height): tighter stack so 5 buttons fit */
-@media (max-height: 480px) and (orientation: landscape) {
-    .rl-touch-btn { height: 50px !important; }
     .rl-touch-btn[data-slot="0"] { bottom: 12px  !important; }
     .rl-touch-btn[data-slot="1"] { bottom: 70px  !important; }
     .rl-touch-btn[data-slot="2"] { bottom: 128px !important; }
     .rl-touch-btn[data-slot="3"] { bottom: 186px !important; }
     .rl-touch-btn[data-slot="4"] { bottom: 244px !important; }
+    .rl-touch-btn[data-slot="5"] { bottom: 302px !important; }
+}
+
+/* Mobile landscape (short height): even tighter stack so 6 buttons fit */
+@media (max-height: 480px) and (orientation: landscape) {
+    .rl-touch-btn { height: 44px !important; }
+    .rl-touch-btn[data-slot="0"] { bottom: 10px  !important; }
+    .rl-touch-btn[data-slot="1"] { bottom: 60px  !important; }
+    .rl-touch-btn[data-slot="2"] { bottom: 110px !important; }
+    .rl-touch-btn[data-slot="3"] { bottom: 160px !important; }
+    .rl-touch-btn[data-slot="4"] { bottom: 210px !important; }
+    .rl-touch-btn[data-slot="5"] { bottom: 260px !important; }
     #chat-toggle { top: 130px !important; }
     #chat-panel  { top: 170px !important; max-height: 160px !important; }
 }

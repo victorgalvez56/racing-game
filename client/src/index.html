@@ -753,11 +753,28 @@
 
     <!-- ── REDLINE: Title screen ── -->
     <div id="redline-title" class="rl-overlay">
+        <!-- Synthwave atmosphere layers -->
+        <div class="rl-grid-floor" aria-hidden="true"></div>
+        <div class="rl-speed-lines" aria-hidden="true">
+            <div class="rl-speed-line"></div>
+            <div class="rl-speed-line"></div>
+            <div class="rl-speed-line"></div>
+            <div class="rl-speed-line"></div>
+        </div>
+        <div class="rl-scanlines" aria-hidden="true"></div>
+
         <div class="rl-version">0.1.0</div>
         <div class="rl-title-content">
             <h1 class="rl-wordmark">REDLINE</h1>
             <div class="rl-slash" aria-hidden="true"></div>
             <p class="rl-tagline">Race clean. Or <em>wreck everything</em>.</p>
+            <div class="rl-mode-pills" aria-hidden="true">
+                <span class="rl-pill" data-mode="race">🏁 RACE</span>
+                <span class="rl-pill rl-pill-divider"></span>
+                <span class="rl-pill" data-mode="combat">💥 COMBAT</span>
+                <span class="rl-pill rl-pill-divider"></span>
+                <span class="rl-pill" data-mode="arcade">🎮 ARCADE</span>
+            </div>
         </div>
         <div class="rl-prompt">PRESS ANY KEY</div>
     </div>

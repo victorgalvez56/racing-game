@@ -1005,6 +1005,36 @@
         z-index: 500;
     ">1 online</div>
 
+    <!-- HUD: connection / ping -->
+    <div id="mp-ping" style="
+        position: fixed;
+        top: 44px;
+        right: 16px;
+        background: rgba(0,0,0,0.4);
+        color: rgba(255,255,255,0.55);
+        font-family: monospace;
+        font-size: 10px;
+        letter-spacing: 0.5px;
+        padding: 3px 9px;
+        border-radius: 4px;
+        display: none;
+        align-items: center;
+        gap: 6px;
+        z-index: 500;
+        pointer-events: none;
+        user-select: none;
+    ">
+        <span id="mp-ping-dot" style="
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #888;
+            box-shadow: 0 0 6px rgba(255,255,255,0.15);
+            transition: background 0.3s, box-shadow 0.3s;
+        "></span>
+        <span id="mp-ping-val">-- ms</span>
+    </div>
+
     <!-- Chat toggle button -->
     <button id="chat-toggle" style="
         position: fixed;

@@ -7,7 +7,7 @@ const MODE_DATA = {
         icon:       '🏁',
         accent:     'var(--rl-cyan)',
         objective:  'Set the fastest <em>5-lap</em> time. Sectors and curbs grade your line.',
-        controls:   '<kbd>WASD</kbd> drive · <kbd>SHIFT</kbd> boost · <kbd>SPACE</kbd> brake · <kbd>R</kbd> respawn',
+        controls:   '<kbd>WASD</kbd> drive · <kbd>SHIFT</kbd> boost · <kbd>X</kbd> brake · <kbd>SPACE</kbd> jump · <kbd>R</kbd> respawn',
         tips:       'Hit boost pads. Watch sector splits. Curbs are flat — clip them. Off-track for 3s invalidates the lap.',
     },
     combat: {
@@ -16,7 +16,7 @@ const MODE_DATA = {
         icon:       '💥',
         accent:     'var(--rl-redline)',
         objective:  'First driver to <em>5 kills</em> wins. Stay alive, hunt rivals.',
-        controls:   '<kbd>WASD</kbd> drive · <kbd>SHIFT</kbd> boost · <kbd>SPACE</kbd> brake · <kbd>F</kbd> fire · <kbd>R</kbd> respawn',
+        controls:   '<kbd>WASD</kbd> drive · <kbd>SHIFT</kbd> boost · <kbd>X</kbd> brake · <kbd>SPACE</kbd> jump · <kbd>F</kbd> fire · <kbd>R</kbd> respawn',
         tips:       'Grab orange ammo crates and green health spheres. Missiles home toward enemies — don\'t waste them on walls.',
     },
     arcade: {
@@ -25,7 +25,7 @@ const MODE_DATA = {
         icon:       '🎮',
         accent:     'var(--rl-amber)',
         objective:  'Race <em>5 laps</em> with <em>weapons hot</em>. No rules — just chaos.',
-        controls:   '<kbd>WASD</kbd> drive · <kbd>SHIFT</kbd> boost · <kbd>SPACE</kbd> brake · <kbd>F</kbd> fire · <kbd>R</kbd> respawn',
+        controls:   '<kbd>WASD</kbd> drive · <kbd>SHIFT</kbd> boost · <kbd>X</kbd> brake · <kbd>SPACE</kbd> jump · <kbd>F</kbd> fire · <kbd>R</kbd> respawn',
         tips:       'Best of both worlds. Watch your six on the straights. Boost pads can save you from a missile.',
     },
 }

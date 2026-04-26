@@ -213,8 +213,8 @@ export default class Application
 
         const tips = [
             'WASD to drive · SHIFT to boost',
-            'F to fire · Space to brake',
-            'Press R if you get stuck',
+            'X to brake · SPACE to jump',
+            'F to fire · R if you get stuck',
             'Race clean. Or wreck everything.',
             'Missiles home. Don\'t waste them on walls.',
             'Three modes. One track. Pick your lane.',

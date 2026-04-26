@@ -125,6 +125,7 @@ export default class World
         this._setupRespawnFeedback()
         this._setupMuteButton()
         this._setupCameraEffects()
+        this._setupJump()
 
         if(combat)
         {
@@ -618,6 +619,34 @@ export default class World
         })
     }
 
+    // Big arcade jump on Space — only fires when grounded; 600ms cooldown
+    _setupJump()
+    {
+        const COOLDOWN_MS = 600
+        const STRENGTH    = 480     // peak ~5m for chassis mass 40kg
+
+        let lastJumpAt = 0
+
+        this.controls.on('action', (name) =>
+        {
+            if(name !== 'jump') return
+            if(this.healthSystem?.isDead?.()) return
+
+            const now = Date.now()
+            if(now - lastJumpAt < COOLDOWN_MS) return
+
+            const wheels = this.physics?.car?.vehicle?.wheelInfos
+            if(!wheels?.length) return
+
+            const grounded = wheels.some(w => w.isInContact)
+            if(!grounded) return
+
+            this.physics.car.jump(false, STRENGTH)
+            lastJumpAt = now
+            this.sounds?.play('uiArea', 0)
+        })
+    }
+
     setEnvironment()
     {
         this.environment = new Environment({
@@ -793,6 +822,8 @@ export default class World
 
         this.healthSystem.on('respawn', () =>
         {
+            // Reset ammo back to starting count on respawn
+            if(this.weapons) this.weapons.ammo = 10
             this._updateCombatHUD()
             this._showLocalCar()
             const $ov = document.getElementById('death-overlay')

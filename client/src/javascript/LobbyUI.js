@@ -8,9 +8,15 @@ export default class LobbyUI
         this.config      = _options.config
         this._onSoloJoin = _options.onSoloJoin || null
 
-        this.$lobby = document.getElementById('lobby')
-        this.$hud   = document.getElementById('mp-hud')
-        this.$toast = document.getElementById('mp-toast')
+        this.$lobby   = document.getElementById('lobby')
+        this.$hud     = document.getElementById('mp-hud')
+        this.$toast   = document.getElementById('mp-toast')
+        this.$ping    = document.getElementById('mp-ping')
+        this.$pingDot = document.getElementById('mp-ping-dot')
+        this.$pingVal = document.getElementById('mp-ping-val')
+
+        this._pingTimer    = null
+        this._pingConnected = false
 
         this._toastTimer  = null
         this._onlineCount = 1
@@ -221,8 +227,16 @@ export default class LobbyUI
     {
         if(!this.network) return
 
+        this.network.on('connected', () =>
+        {
+            this._pingConnected = true
+            this._startPingHUD()
+        })
+
         this.network.on('disconnected', () =>
         {
+            this._pingConnected = false
+            this._renderPing(null)
             this.showToast('Connection lost — reconnecting...')
         })
 
@@ -257,6 +271,49 @@ export default class LobbyUI
     _updateHUD()
     {
         if(this.$hud) this.$hud.textContent = `${this._onlineCount} online`
+    }
+
+    _startPingHUD()
+    {
+        if(!this.$ping || this._pingTimer) return
+        this.$ping.style.display = 'flex'
+        this._renderPing(this.network?.latency ?? null)
+        this._pingTimer = setInterval(() =>
+        {
+            this._renderPing(this._pingConnected ? (this.network?.latency ?? null) : null)
+        }, 1000)
+    }
+
+    _renderPing(ms)
+    {
+        if(!this.$ping) return
+
+        // Disconnected state
+        if(!this._pingConnected || ms === null)
+        {
+            this.$pingDot.style.background = '#e74c3c'
+            this.$pingDot.style.boxShadow  = '0 0 6px rgba(231,76,60,0.6)'
+            this.$pingVal.textContent      = 'offline'
+            return
+        }
+
+        // First measurement not in yet
+        if(ms === 0)
+        {
+            this.$pingDot.style.background = '#888'
+            this.$pingDot.style.boxShadow  = '0 0 6px rgba(255,255,255,0.15)'
+            this.$pingVal.textContent      = '-- ms'
+            return
+        }
+
+        let color, glow
+        if(ms < 60)        { color = '#2ecc71'; glow = 'rgba(46,204,113,0.55)' }
+        else if(ms < 140)  { color = '#f1c40f'; glow = 'rgba(241,196,15,0.55)' }
+        else               { color = '#e74c3c'; glow = 'rgba(231,76,60,0.55)' }
+
+        this.$pingDot.style.background = color
+        this.$pingDot.style.boxShadow  = `0 0 6px ${glow}`
+        this.$pingVal.textContent      = `${ms} ms`
     }
 
     showToast(message, duration = 3000)

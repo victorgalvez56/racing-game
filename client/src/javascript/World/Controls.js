@@ -96,9 +96,14 @@ export default class Controls extends EventEmitter
 
                 case 'ControlLeft':
                 case 'ControlRight':
-                case 'Space':
+                case 'KeyX':
                     this.actions.brake = true
                     this._sendInput()
+                    break
+
+                case 'Space':
+                    // Tap action — handled by World, not held
+                    this.trigger('action', ['jump'])
                     break
 
                 case 'ShiftLeft':
@@ -143,7 +148,7 @@ export default class Controls extends EventEmitter
 
                 case 'ControlLeft':
                 case 'ControlRight':
-                case 'Space':
+                case 'KeyX':
                     this.actions.brake = false
                     this._sendInput()
                     break

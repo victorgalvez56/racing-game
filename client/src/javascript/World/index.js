@@ -632,10 +632,16 @@ export default class World
             const now = Date.now()
             if(now - lastJumpAt < COOLDOWN_MS) return
 
-            const wheels = this.physics?.car?.vehicle?.wheelInfos
-            if(!wheels?.length) return
+            const body = this.physics?.car?.chassis?.body
+            if(!body) return
 
-            const grounded = wheels.some(w => w.isInContact)
+            // Grounded check — small vertical speed AND low body z means
+            // the car is sitting on some surface (floor, plateau, ramp, deck).
+            // legacy cannon.js wheelInfo doesn't expose isInContact reliably,
+            // so we infer ground contact from body kinematics instead.
+            const vz       = body.velocity.z
+            const z        = body.position.z
+            const grounded = Math.abs(vz) < 4 && z < 3.5
             if(!grounded) return
 
             this.physics.car.jump(false, STRENGTH)

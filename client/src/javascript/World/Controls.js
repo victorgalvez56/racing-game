@@ -102,7 +102,9 @@ export default class Controls extends EventEmitter
                     break
 
                 case 'Space':
-                    // Tap action — handled by World, not held
+                    // Tap action — handled by World, not held.
+                    // preventDefault stops the browser from scrolling on space.
+                    _event.preventDefault()
                     this.trigger('action', ['jump'])
                     break
 

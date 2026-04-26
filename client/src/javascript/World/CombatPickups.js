@@ -6,7 +6,8 @@ const BOB_AMP         = 0.28
 const BOB_SPEED       = 0.0018   // rad/ms
 const SPIN_SPEED      = 0.0012
 
-const PICKUP_DEFS = [
+// Pickup positions distributed around the racetrack
+const TRACK_PICKUPS = [
     { x:  22, y: -35, type: 'ammo',   value: 5  },   // bottom straight
     { x:  58, y:  -8, type: 'health', value: 40 },   // right hairpin exit
     { x:   0, y:  42, type: 'ammo',   value: 5  },   // top
@@ -15,14 +16,30 @@ const PICKUP_DEFS = [
     { x: -20, y: -38, type: 'health', value: 40 },   // lower left
 ]
 
+// Pickup positions inside the combat arena (80×80 centered at origin).
+// Placed in the gaps between obstacles to reward map awareness.
+const ARENA_PICKUPS = [
+    { x:   0, y:   0, type: 'health', value: 40 },   // dead center — risky
+    { x:  16, y:  16, type: 'ammo',   value: 5  },   // NE corridor
+    { x: -16, y:  16, type: 'ammo',   value: 5  },   // NW corridor
+    { x:  16, y: -16, type: 'ammo',   value: 5  },   // SE corridor
+    { x: -16, y: -16, type: 'ammo',   value: 5  },   // SW corridor
+    { x:   0, y:  28, type: 'health', value: 40 },   // north edge
+    { x:   0, y: -28, type: 'health', value: 40 },   // south edge (near spawn)
+    { x:  32, y:   0, type: 'ammo',   value: 5  },   // east wall
+    { x: -32, y:   0, type: 'ammo',   value: 5  },   // west wall
+]
+
 export default class CombatPickups
 {
     constructor(_options)
     {
         this.scene     = _options.scene
         this.physics   = _options.physics
-        this.onCollect = _options.onCollect  // ({ type, value }) => {}
+        this.onCollect = _options.onCollect    // ({ type, value }) => {}
+        this.layout    = _options.layout       // 'track' | 'arena'
 
+        this._defs  = (this.layout === 'arena') ? ARENA_PICKUPS : TRACK_PICKUPS
         this._items = []
         this._t     = 0
         this._build()
@@ -49,7 +66,7 @@ export default class CombatPickups
         })
         const glowGeo = new THREE.SphereGeometry(1.1, 8, 6)
 
-        PICKUP_DEFS.forEach((def, i) =>
+        this._defs.forEach((def, i) =>
         {
             const isAmmo   = def.type === 'ammo'
             const geo      = isAmmo ? geoAmmo : geoHealth

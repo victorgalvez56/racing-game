@@ -538,6 +538,9 @@ export default class Weapons
 
     _offTrack(x, y)
     {
+        // No racetrack? (combat arena) — never auto-explode for being "off"
+        if(!this.centerPath || this.centerPath.length === 0) return false
+
         let minSq = Infinity
         for(const pt of this.centerPath)
         {

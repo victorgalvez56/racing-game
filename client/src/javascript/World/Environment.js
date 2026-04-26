@@ -19,6 +19,7 @@ export default class Environment
     {
         this.resources = _options.resources
         this.renderer  = _options.renderer
+        this.gameMode  = _options.gameMode || 'arcade'
 
         this.container = new THREE.Object3D()
         this.container.matrixAutoUpdate = false
@@ -26,11 +27,16 @@ export default class Environment
         this._cache = {}    // material cache
 
         this._buildSky()
-        this._buildGantry()
-        this._buildTrees()
-        this._buildStands()
-        this._buildGravelTraps()
-        this._buildCurbs()
+
+        // Track-only environment elements — skip in pure combat (no track)
+        if(this.gameMode !== 'combat')
+        {
+            this._buildGantry()
+            this._buildTrees()
+            this._buildStands()
+            this._buildGravelTraps()
+            this._buildCurbs()
+        }
 
         // Atmospheric dark-blue background instead of pure black
         this.renderer.setClearColor(0x080c12, 1)

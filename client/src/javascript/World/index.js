@@ -11,6 +11,7 @@ import Sounds from './Sounds.js'
 import RemoteCarManager from './RemoteCarManager.js'
 import Minimap from './Minimap.js'
 import Track from './Track.js'
+import Arena, { ARENA_SPAWN_GRID } from './Arena.js'
 import gsap from 'gsap'
 import ControlsOverlay from '../ControlsOverlay.js'
 import LapTimer from '../LapTimer.js'
@@ -82,14 +83,26 @@ export default class World
         this.setMaterials()
         this.setShadows()
         this.setPhysics()
-        this.setTrack()
+
+        // Race / Arcade use the racetrack; pure Combat uses a separate arena
+        if(combat && !race)
+        {
+            this.setArena()
+        }
+        else
+        {
+            this.setTrack()
+        }
+
         if(this.network) this._setupSnapshotSender()
         if(this.network) this._setupBumpHandling()
         this.setObjects()
         this.setCar()
         this.areas.car = this.car
         this._setupYouLabel()
-        this.setMinimap()
+
+        // Minimap shows the racetrack outline — hide for pure combat
+        if(race) this.setMinimap()
 
         if(race)
         {
@@ -103,7 +116,10 @@ export default class World
 
         this.setSkidMarks()
         this.setSmokeParticles()
-        this.setBoostPads()
+
+        // Boost pads are a racing element — only spawn them when there's a track
+        if(race) this.setBoostPads()
+
         this.setEnvironment()
         this._setupRespawnFeedback()
         this._setupMuteButton()
@@ -307,6 +323,20 @@ export default class World
             resources:     this.resources,
         })
         this.container.add(this.track.container)
+    }
+
+    setArena()
+    {
+        this.arena = new Arena({
+            world:         this.physics.world,
+            floorMaterial: this.physics.materials.items.floor,
+            resources:     this.resources,
+        })
+        this.container.add(this.arena.container)
+
+        // Use arena spawn grid for combat; spreads players around the south side
+        const slot = (this._serverSpawnPos?._index ?? 0) % ARENA_SPAWN_GRID.length
+        this._serverSpawnPos = ARENA_SPAWN_GRID[slot]
     }
 
     setLapTimer()
@@ -592,6 +622,7 @@ export default class World
         this.environment = new Environment({
             resources: this.resources,
             renderer:  this.renderer,
+            gameMode:  this.config.gameMode || 'arcade',
         })
         this.container.add(this.environment.container)
     }
@@ -704,6 +735,7 @@ export default class World
         this.combatPickups = new CombatPickups({
             scene:   this.scene,
             physics: this.physics,
+            layout:  (this.config.gameMode === 'combat') ? 'arena' : 'track',
             onCollect: ({ type, value }) =>
             {
                 if(type === 'ammo')

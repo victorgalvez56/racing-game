@@ -66,8 +66,15 @@
     font-family: var(--rl-font-ui);
     font-size: 16px;
     background: var(--rl-bg-deep);
+    overflow-x: hidden;
+    overflow-y: auto;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
+}
+
+.rl-overlay,
+.rl-overlay * {
+    box-sizing: border-box;
 }
 
 .rl-overlay.is-active { display: flex; }
@@ -288,16 +295,30 @@
 /* Mode cards */
 .rl-cards {
     display: grid;
-    grid-template-columns: repeat(3, minmax(280px, 320px));
+    grid-template-columns: repeat(3, minmax(0, 320px));
     gap: var(--rl-6);
     width: 100%;
     max-width: 1080px;
+    margin: 0 auto;
+    padding: 0 var(--rl-4);
+    box-sizing: content-box;
 }
 
-@media (max-width: 980px) {
+/* Tablet: 3 cards but fluid so they don't overflow */
+@media (max-width: 1080px) {
     .rl-cards {
-        grid-template-columns: 1fr;
-        max-width: 360px;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        max-width: 100%;
+        padding: 0 var(--rl-6);
+    }
+}
+
+/* Narrow tablet / mobile landscape: stack to one column */
+@media (max-width: 720px) {
+    .rl-cards {
+        grid-template-columns: minmax(0, 360px);
+        justify-content: center;
+        padding: 0 var(--rl-4);
     }
 }
 
@@ -306,7 +327,7 @@
     display: flex;
     flex-direction: column;
     gap: var(--rl-4);
-    padding: var(--rl-8);
+    padding: var(--rl-6);
     background: var(--rl-bg-surface);
     border: 1px solid var(--rl-border);
     border-radius: var(--rl-radius-lg);
@@ -314,6 +335,8 @@
     overflow: hidden;
     text-align: left;
     width: 100%;
+    min-width: 0;       /* prevents grid blowout */
+    box-sizing: border-box;
     transition:
         transform 0.25s var(--rl-ease),
         border-color 0.25s var(--rl-ease),

@@ -17,6 +17,23 @@ export default class Controls extends EventEmitter
 
         this.setActions()
         this.setKeyboard()
+
+        // Auto-init touch UI on touch-capable devices. The Application's
+        // global touchstart handler used to do this on first tap, but that
+        // tap fires on the title screen *before* World/Controls exists, so
+        // `world?.controls.setTouch()` no-ops and the listener (`once: true`)
+        // is consumed — leaving touch users with no on-screen controls.
+        const touchCapable =
+            ('ontouchstart' in window) ||
+            (navigator.maxTouchPoints > 0) ||
+            (navigator.msMaxTouchPoints > 0)
+
+        if(touchCapable)
+        {
+            // Defer one frame so the DOM is settled and World has registered
+            // its tick listeners (the joystick reads from this.time on tick).
+            requestAnimationFrame(() => this.setTouch())
+        }
     }
 
     setActions()

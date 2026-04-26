@@ -3,10 +3,6 @@ import * as THREE from 'three'
 // ── Tunables ───────────────────────────────────────────────────────────────
 const FALL_TIME           = 2200    // ms from spawn (high in sky) to impact
 const SPAWN_HEIGHT        = 70      // meters above the arena floor
-const SPAWN_RANGE         = 38      // ± meters from arena center on each axis
-const SPAWN_INTERVAL_MIN  = 250     // ms minimum between spawns
-const SPAWN_INTERVAL_MAX  = 600     // ms maximum (avg ~425ms = ~140/min)
-const FIRST_SPAWN_DELAY   = 2500    // grace period after combat starts
 const IMPACT_RADIUS       = 5.5
 const IMPACT_DAMAGE       = 32
 const NEAR_DIST           = 14      // distance for sound + camera shake
@@ -23,22 +19,21 @@ export default class Meteors
         this.sounds       = _options.sounds || null
         this.shake        = _options.onShake  || null
 
-        this._items     = []
-        this._t         = 0
-        this._nextSpawn = FIRST_SPAWN_DELAY
+        this._items = []
+        this._t     = 0
+    }
+
+    // Server broadcasts 'combat:meteor' with a target XY; the client just
+    // animates the visual + applies damage on impact. All clients see the
+    // same shower because the schedule lives on the server.
+    spawnAt(x, y)
+    {
+        this._spawn(x, y)
     }
 
     update(dt)
     {
         this._t += dt
-
-        // Spawn loop
-        if(this._t >= this._nextSpawn)
-        {
-            this._spawn()
-            this._nextSpawn = this._t + SPAWN_INTERVAL_MIN +
-                Math.random() * (SPAWN_INTERVAL_MAX - SPAWN_INTERVAL_MIN)
-        }
 
         // Animate active meteors
         for(let i = this._items.length - 1; i >= 0; i--)
@@ -84,11 +79,8 @@ export default class Meteors
     }
 
     // ── Spawn ──────────────────────────────────────────────────────────────
-    _spawn()
+    _spawn(x, y)
     {
-        const x = (Math.random() - 0.5) * SPAWN_RANGE * 2
-        const y = (Math.random() - 0.5) * SPAWN_RANGE * 2
-
         const radius = 0.8 + Math.random() * 0.6
         const spin   = 0.7 + Math.random() * 0.8
 

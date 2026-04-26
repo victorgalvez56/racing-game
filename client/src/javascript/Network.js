@@ -10,7 +10,15 @@ export default class Network extends EventEmitter
         this.socket   = null
         this.localId  = null
         this.latency  = 0
+        this.serverTimeOffset = 0     // serverTime ≈ Date.now() + offset
         this._pingInterval = null
+    }
+
+    // Returns the current server clock estimate (used for interpolation
+    // timing so clients pin to the same temporal reference)
+    serverNow()
+    {
+        return Date.now() + this.serverTimeOffset
     }
 
     connect(serverUrl = '/')
@@ -107,14 +115,34 @@ export default class Network extends EventEmitter
             this.trigger('combat:carDestroyed', [data])
         })
 
-        // Latency measurement — fires 'ping' event each round-trip so the
-        // status pill / HUD can render the value in real time
+        this.socket.on('combat:meteor', (data) =>
+        {
+            this.trigger('combat:meteor', [data])
+        })
+
+        // Latency + clock-sync. Server returns its Date.now() in the ping
+        // callback; we compute (serverTime + halfRTT) - clientTime to get
+        // an offset that lets clients align interpolation to a shared clock.
         this._pingInterval = setInterval(() =>
         {
             const start = Date.now()
-            this.socket.emit('ping', () =>
+            this.socket.emit('ping', (serverTime) =>
             {
-                this.latency = Date.now() - start
+                const rtt = Date.now() - start
+                this.latency = rtt
+                if(typeof serverTime === 'number')
+                {
+                    // Smoothed offset (low-pass) so single jitter doesn't
+                    // jolt the timeline. First sample sets it directly.
+                    const sampled = (serverTime + rtt / 2) - Date.now()
+                    if(this._offsetInitialized)
+                        this.serverTimeOffset = this.serverTimeOffset * 0.7 + sampled * 0.3
+                    else
+                    {
+                        this.serverTimeOffset = sampled
+                        this._offsetInitialized = true
+                    }
+                }
                 this.trigger('ping', [this.latency])
             })
         }, 1500)

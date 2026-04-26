@@ -869,7 +869,7 @@ export default class World
             hazards:          this.hazardZones.getMinimapZones(),
         })
 
-        // ── Meteor shower — environmental hazard, falls every 2-4s ──
+        // ── Meteor shower — server-driven so all clients see the same impacts ──
         this.meteors = new Meteors({
             scene:        this.scene,
             physics:      this.physics,
@@ -878,6 +878,14 @@ export default class World
             sounds:       this.sounds,
             onShake:      () => this._shakeCamera(),
         })
+
+        if(this.network)
+        {
+            this.network.on('combat:meteor', ({ x, y }) =>
+            {
+                this.meteors?.spawnAt(x, y)
+            })
+        }
 
         // ── Tick ──
         this.time.on('tick', () =>

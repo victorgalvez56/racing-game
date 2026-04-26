@@ -50,7 +50,7 @@ export const NETWORK = {
   tickRate:              20,    // Hz — server broadcast frequency
   physicsRate:           60,    // Hz — physics step frequency
   maxPlayers:            20,
-  interpolationDelay:    100,   // ms — client renders this far behind server
+  interpolationDelay:    80,    // ms — client renders this far behind server (extrapolates if buffer dries up)
   snapshotBufferTime:    3000,  // ms — how long to keep old snapshots
   pingInterval:          2000,  // ms
 }

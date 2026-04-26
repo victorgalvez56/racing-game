@@ -188,6 +188,8 @@ export default class RemoteCar
             t:      snapshot.t,
             pos:    snapshot.pos,
             quat:   snapshot.quat,
+            vel:    snapshot.vel    || null,
+            angVel: snapshot.angVel || null,
             wheels: snapshot.wheels,
         })
 
@@ -206,11 +208,14 @@ export default class RemoteCar
 
     // ── update loop ─────────────────────────────────────────────────────────
 
-    update(camera, sizes)
+    update(camera, sizes, network = null)
     {
         if(this.snapshots.length === 0) return
 
-        const renderTime = Date.now() - this.interpolationDelay
+        // Use server-time offset if available so all clients render the
+        // same temporal slice (eliminates per-client clock drift)
+        const offset = network?.serverTimeOffset || 0
+        const renderTime = (Date.now() + offset) - this.interpolationDelay
 
         let older = null
         let newer = null
@@ -225,20 +230,63 @@ export default class RemoteCar
             }
         }
 
-        if(!older || !newer)
+        if(older && newer)
         {
-            const latest = this.snapshots[this.snapshots.length - 1]
-            this._applySnapshot(latest, 0, latest)
-        }
-        else
-        {
+            // Standard interpolation between two known snapshots
             const total = newer.t - older.t
             const alpha = total > 0 ? (renderTime - older.t) / total : 0
             this._applySnapshot(older, alpha, newer)
         }
+        else
+        {
+            // Buffer empty for renderTime — extrapolate from the latest using
+            // velocity if it's recent enough, otherwise just snap to it.
+            const latest = this.snapshots[this.snapshots.length - 1]
+            const ahead  = (renderTime - latest.t) / 1000  // seconds past
+            if(ahead > 0 && ahead < 0.25 && latest.vel)
+            {
+                this._applyExtrapolated(latest, ahead)
+            }
+            else
+            {
+                this._applySnapshot(latest, 0, latest)
+            }
+        }
 
         this._updateWheelPositions()
         this._updateLabel(camera, sizes)
+    }
+
+    // Project the latest known state forward by `dtSec` using its velocity.
+    // Caps the extrapolation distance so a stale snapshot can't fling the car.
+    _applyExtrapolated(latest, dtSec)
+    {
+        const px = latest.pos[0] + latest.vel[0] * dtSec
+        const py = latest.pos[1] + latest.vel[1] * dtSec
+        const pz = latest.pos[2] + latest.vel[2] * dtSec
+        this.container.position.set(px, py, pz)
+        this.chassis.object.position.set(0, 0, -0.28)
+
+        const q = new THREE.Quaternion(latest.quat[0], latest.quat[1], latest.quat[2], latest.quat[3])
+        this.container.quaternion.copy(q)
+
+        this._ensurePhysicsBody()
+        if(this._physicsBody)
+        {
+            this._physicsBody.position.set(px, py, pz)
+            this._physicsBody.quaternion.set(q.x, q.y, q.z, q.w)
+        }
+
+        // Wheel meshes — use the most recent known transforms (no extrapolation)
+        if(latest.wheels)
+        {
+            this.wheels.forEach((wheel, i) =>
+            {
+                const w = latest.wheels[i]
+                wheel.worldPos  = [w.pos[0], w.pos[1], w.pos[2]]
+                wheel.worldQuat = new THREE.Quaternion(w.quat[0], w.quat[1], w.quat[2], w.quat[3])
+            })
+        }
     }
 
     // ── collision body ──────────────────────────────────────────────────────

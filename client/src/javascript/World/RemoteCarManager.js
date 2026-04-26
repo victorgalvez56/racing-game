@@ -220,7 +220,7 @@ export default class RemoteCarManager
     {
         for(const car of this.cars.values())
         {
-            car.update(this.camera, this.sizes)
+            car.update(this.camera, this.sizes, this.network)
         }
     }
 

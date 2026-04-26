@@ -12,6 +12,27 @@ export class GameRoom {
 
     this._startLoop()
     this._setupSocketEvents()
+    this._startMeteorShower()
+  }
+
+  // Server-driven meteor shower so all players see the same impacts.
+  // Skips emit when nobody is connected to save bandwidth.
+  _startMeteorShower() {
+    const SPAWN_RANGE = 38
+    const tick = () => {
+      const delay = 250 + Math.random() * 350   // 250–600ms (avg ~425ms)
+      setTimeout(() => {
+        if (this.players.size > 0) {
+          this.io.emit('combat:meteor', {
+            x: (Math.random() - 0.5) * SPAWN_RANGE * 2,
+            y: (Math.random() - 0.5) * SPAWN_RANGE * 2,
+            t: Date.now(),
+          })
+        }
+        tick()
+      }, delay)
+    }
+    tick()
   }
 
   _setupSocketEvents() {
@@ -24,7 +45,11 @@ export class GameRoom {
 
       console.log(`[+] ${socket.id}`)
 
-      socket.on('ping', (cb) => { if(typeof cb === 'function') cb() })
+      socket.on('ping', (cb) => {
+        // Return the server's current epoch time so clients can compute
+        // (clock skew + half RTT) and align interpolation timestamps
+        if(typeof cb === 'function') cb(Date.now())
+      })
 
       socket.on('player:join', ({ name, carColor, carType }) => {
         const spawnPos = this._getSpawnPosition()

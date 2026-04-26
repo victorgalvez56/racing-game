@@ -2,6 +2,118 @@ import * as THREE from 'three'
 import CANNON from 'cannon'
 import MatcapMaterial from '../Materials/Matcap.js'
 
+// ── Procedural textures ─────────────────────────────────────────────────────
+
+// Synthwave-style floor: dim red grid on near-black background.
+// Bright lines at the tile edges (every 4m), dim quarter lines (every 1m).
+function makeSynthwaveFloorTex()
+{
+    const SZ = 256
+    const c = document.createElement('canvas')
+    c.width = c.height = SZ
+    const ctx = c.getContext('2d')
+
+    ctx.fillStyle = '#0a0a14'
+    ctx.fillRect(0, 0, SZ, SZ)
+
+    // Dim quarter grid
+    ctx.strokeStyle = 'rgba(255, 46, 77, 0.10)'
+    ctx.lineWidth = 1
+    for(let f = 0.25; f < 1; f += 0.25)
+    {
+        const i = Math.round(f * SZ) + 0.5
+        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, SZ); ctx.stroke()
+        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(SZ, i); ctx.stroke()
+    }
+
+    // Bright tile edges
+    ctx.strokeStyle = 'rgba(255, 46, 77, 0.55)'
+    ctx.lineWidth = 2
+    ctx.strokeRect(1, 1, SZ - 2, SZ - 2)
+
+    return new THREE.CanvasTexture(c)
+}
+
+// REDLINE wordmark on transparent background — used as a paint decal
+function makeLogoTex()
+{
+    const c = document.createElement('canvas')
+    c.width = 1024
+    c.height = 256
+    const ctx = c.getContext('2d')
+
+    // Transparent — only fillText
+    ctx.fillStyle = 'rgba(255, 46, 77, 0.55)'
+    ctx.font = '700 200px "Space Grotesk", sans-serif'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText('REDLINE', 512, 130)
+
+    // Subtle glow underline
+    const g = ctx.createLinearGradient(140, 220, 884, 220)
+    g.addColorStop(0,    'rgba(255, 46, 77, 0)')
+    g.addColorStop(0.5,  'rgba(255, 46, 77, 0.7)')
+    g.addColorStop(1,    'rgba(255, 46, 77, 0)')
+    ctx.strokeStyle = g
+    ctx.lineWidth = 3
+    ctx.beginPath(); ctx.moveTo(140, 230); ctx.lineTo(884, 230); ctx.stroke()
+
+    return new THREE.CanvasTexture(c)
+}
+
+// Yellow/amber diagonal hazard chevrons
+function makeChevronTex()
+{
+    const c = document.createElement('canvas')
+    c.width = 256
+    c.height = 64
+    const ctx = c.getContext('2d')
+
+    ctx.fillStyle = '#1a1a1a'
+    ctx.fillRect(0, 0, 256, 64)
+
+    ctx.fillStyle = '#FFB627'
+    const sw    = 32
+    const slant = 20
+    for(let i = -slant - sw; i < 256 + sw; i += sw * 2)
+    {
+        ctx.beginPath()
+        ctx.moveTo(i,                  0)
+        ctx.lineTo(i + sw,             0)
+        ctx.lineTo(i + sw + slant,     64)
+        ctx.lineTo(i + slant,          64)
+        ctx.closePath()
+        ctx.fill()
+    }
+
+    return new THREE.CanvasTexture(c)
+}
+
+// Two parallel curving tire skid marks
+function makeSkidTex()
+{
+    const c = document.createElement('canvas')
+    c.width = 256
+    c.height = 96
+    const ctx = c.getContext('2d')
+
+    ctx.strokeStyle = 'rgba(15, 15, 20, 0.65)'
+    ctx.lineWidth = 7
+    ctx.lineCap = 'round'
+
+    ctx.beginPath()
+    ctx.moveTo(0, 26)
+    ctx.bezierCurveTo(64, 22, 192, 18, 256, 36)
+    ctx.stroke()
+
+    ctx.beginPath()
+    ctx.moveTo(0, 66)
+    ctx.bezierCurveTo(64, 62, 192, 58, 256, 78)
+    ctx.stroke()
+
+    return new THREE.CanvasTexture(c)
+}
+
 // ── Layout constants ────────────────────────────────────────────────────────
 const SIZE          = 100     // arena footprint (100×100m)
 const WALL_HEIGHT   = 2.6
@@ -66,6 +178,7 @@ export default class Arena
 
     _build()
     {
+        this._createFloor()                // synthwave grid base
         this._createPerimeter()
         this._createPlateau()
         this._createPlateauRamps()
@@ -75,6 +188,92 @@ export default class Arena
         this._createSpine( -28, -28)       // SW quadrant — spine (back-to-back ramps)
         this._createObstacles()            // Mixed low-poly trees + L cover
         this._createMarkings()
+        this._createDecals()               // logo + chevrons + skid marks
+    }
+
+    // ── Synthwave grid floor (visual only, sits above the global floor) ────
+    _createFloor()
+    {
+        const tex = makeSynthwaveFloorTex()
+        tex.wrapS = THREE.RepeatWrapping
+        tex.wrapT = THREE.RepeatWrapping
+        tex.repeat.set(SIZE / 4, SIZE / 4)   // each tile = 4×4m → bright line every 4m
+
+        const geo  = new THREE.PlaneGeometry(SIZE, SIZE)
+        const mat  = new THREE.MeshBasicMaterial({ map: tex })
+        const mesh = new THREE.Mesh(geo, mat)
+        mesh.position.z = 0.008
+        mesh.matrixAutoUpdate = false
+        mesh.updateMatrix()
+        this.container.add(mesh)
+    }
+
+    // ── Floor decals: logo, hazard chevrons, scattered skid marks ──────────
+    _createDecals()
+    {
+        // REDLINE logo painted on the floor between spawn and plateau
+        this._addLogoDecal(0, -22, 18, 4.5, 0)
+
+        // Hazard chevron strips at key entry points
+        this._addChevronStrip(  0, -38, 30, 1.4, 0)              // spawn line
+        this._addChevronStrip(-28,  10, 8,  1.0, 0)              // before stairs
+        this._addChevronStrip( 22, 22, 8,  1.0, Math.PI / 4)     // bowl approach NE
+        this._addChevronStrip( 22,-22, 8,  1.0,-Math.PI / 4)     // kicker approach SE
+
+        // Scattered tire skid marks for wear-and-tear flavor
+        const skids = [
+            { x:  10, y:  -8, w: 6, h: 2.2, rot:  0.4 },
+            { x: -14, y:   2, w: 5, h: 2.0, rot: -0.7 },
+            { x:  16, y: -22, w: 7, h: 2.4, rot:  1.1 },
+            { x:  -8, y: -22, w: 5, h: 2.0, rot: -0.3 },
+            { x: -22, y:  -6, w: 6, h: 2.2, rot:  0.9 },
+            { x:  20, y:   6, w: 5, h: 2.0, rot: -1.4 },
+        ]
+        for(const s of skids)
+            this._addSkidMark(s.x, s.y, s.w, s.h, s.rot)
+    }
+
+    _addLogoDecal(x, y, w, h, rotation)
+    {
+        const tex = makeLogoTex()
+        const mat = new THREE.MeshBasicMaterial({
+            map: tex, transparent: true, depthWrite: false,
+        })
+        const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat)
+        mesh.position.set(x, y, 0.014)
+        mesh.rotation.z = rotation
+        mesh.matrixAutoUpdate = false
+        mesh.updateMatrix()
+        this.container.add(mesh)
+    }
+
+    _addChevronStrip(x, y, w, h, rotation)
+    {
+        const tex = makeChevronTex()
+        tex.wrapS = THREE.RepeatWrapping
+        tex.repeat.set(Math.max(1, Math.round(w / 2)), 1)
+
+        const mat  = new THREE.MeshBasicMaterial({ map: tex })
+        const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat)
+        mesh.position.set(x, y, 0.013)
+        mesh.rotation.z = rotation
+        mesh.matrixAutoUpdate = false
+        mesh.updateMatrix()
+        this.container.add(mesh)
+    }
+
+    _addSkidMark(x, y, w, h, rotation)
+    {
+        const tex = makeSkidTex()
+        const mat = new THREE.MeshBasicMaterial({
+            map: tex, transparent: true, depthWrite: false,
+        })
+        const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat)
+        mesh.position.set(x, y, 0.011)
+        mesh.rotation.z = rotation
+        mesh.matrixAutoUpdate = false
+        mesh.updateMatrix()
+        this.container.add(mesh)
     }
 
     // ── Perimeter ──────────────────────────────────────────────────────────

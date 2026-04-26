@@ -23,6 +23,7 @@ import BoostPads from './BoostPads.js'
 import Weapons from './Weapons.js'
 import HealthSystem from './HealthSystem.js'
 import CombatPickups from './CombatPickups.js'
+import HazardZones from './HazardZones.js'
 
 export default class World
 {
@@ -814,12 +815,23 @@ export default class World
         if($wpn) $wpn.style.display = 'block'
         this._updateCombatHUD()
 
+        // ── Hazard zones (boost + healing) — only meaningful inside the arena ──
+        if(this.config.gameMode === 'combat')
+        {
+            this.hazardZones = new HazardZones({
+                scene:        this.scene,
+                physics:      this.physics,
+                healthSystem: this.healthSystem,
+            })
+        }
+
         // ── Tick ──
         this.time.on('tick', () =>
         {
             const dt = Math.min(this.time.delta, 60)
             this.weapons.update(dt)
             this.combatPickups.update(dt)
+            this.hazardZones?.update(dt)
         })
     }
 
